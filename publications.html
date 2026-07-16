@@ -5,63 +5,93 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Publications and Journal Articles of Dr. Md. Saidur Rahman. Specialist in mangrove ecology and remote sensing.">
     <title>Publications | Dr. Md. Saidur Rahman</title>
+    
+    <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-    <link rel="stylesheet" href="css/styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Google Fonts & FontAwesome -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tailwind CSS v3 Play CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'brand-green': '#2e7d32',
+                        'brand-light-green': '#4caf50',
+                        'brand-bg': '#f1f8e9',
+                        'brand-accent': '#e8f5e9',
+                    },
+                    fontFamily: {
+                        heading: ['Montserrat', 'sans-serif'],
+                        body: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
 </head>
-<body>
+<body class="bg-brand-bg font-body text-gray-900 pt-16 min-h-screen flex flex-col justify-between">
     <div id="header-placeholder"></div>
-    <div class="hero"></div>
 
-    <main class="container">
-        <div class="main-layout">
-            <div id="sidebar-placeholder"></div>
+    <div class="h-44 bg-cover bg-center relative shadow-inner" style="background-image: linear-gradient(rgba(46, 125, 50, 0.35), rgba(46, 125, 50, 0.35)), url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');"></div>
 
-            <div class="content-area">
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 w-full -mt-16 relative z-10 mb-12">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-8">
+            <div id="sidebar-placeholder" class="md:col-span-4"></div>
+
+            <div class="md:col-span-8 bg-white rounded-xl shadow-md p-6 sm:p-10 border border-emerald-100">
                 <section id="publications">
-                    <h2>Journal Articles</h2>
+                    <h2 class="font-heading font-bold text-2xl text-brand-green border-b-2 border-emerald-100 pb-3 mb-6">Journal Articles</h2>
                     
-                    <div class="publication-item">
-                        <span class="item-title">Socio-ecological perspectives of Urban Green Spaces (UGSs) policies in Bangladesh</span>
-                        <span class="item-meta">Rahman, M. S., Shanu, S. A. and Amin, M. N. 2025. Landscape, Ecology and Infrastructure.</span>
+                    <div class="space-y-6 divide-y divide-emerald-50 mb-8">
+                        <div class="pt-4 first:pt-0">
+                            <span class="font-semibold text-gray-900 block">Socio-ecological perspectives of Urban Green Spaces (UGSs) policies in Bangladesh</span>
+                            <span class="text-sm text-emerald-700 italic block mt-1">Rahman, M. S., Shanu, S. A. and Amin, M. N. 2025. Landscape, Ecology and Infrastructure.</span>
+                        </div>
+
+                        <div class="pt-4">
+                            <span class="font-semibold text-gray-900 block">Climate and salinity together control above ground carbon accumulation in the Sundarbans mangrove ecosystem</span>
+                            <span class="text-sm text-emerald-700 italic block mt-1">Chowdhury, M. Q., Sarker, S. K., Marma, M., Rahman, M. S. and Datta, A. 2024. Ocean & Coastal Management, 255, 107242.</span>
+                        </div>
+
+                        <div class="pt-4">
+                            <span class="font-semibold text-gray-900 block">Variations in biophysical characteristics of mangroves along retreating and advancing shorelines</span>
+                            <span class="text-sm text-emerald-700 italic block mt-1">Bhargava, R., Rahman, M. S., Ghosh, T. and Friess, D. A. 2024. Science of The Total Environment, 171690.</span>
+                        </div>
+
+                        <div class="pt-4">
+                            <span class="font-semibold text-gray-900 block">What drives carbon stocks in a mangrove forest? The role of stand structure, species diversity and functional traits</span>
+                            <span class="text-sm text-emerald-700 italic block mt-1">Zaman, M. R., Rahman, M. S., Ahmed, S., & Zuidema, P. A. (2023). Estuarine, Coastal and Shelf Science, 108556.</span>
+                        </div>
+
+                        <div class="pt-4">
+                            <span class="font-semibold text-gray-900 block">Biomass estimation in mangrove forests: a comparison of allometric models incorporating species and structural information</span>
+                            <span class="text-sm text-emerald-700 italic block mt-1">Rahman, M.S., Donoghue, D.N.M., Bracken, L.J. and Mahmood, H. 2021. Environmental Research Letters 16, 124002.</span>
+                        </div>
+
+                        <div class="pt-4">
+                            <span class="font-semibold text-gray-900 block">Is soil organic carbon underestimated in the largest mangrove forest ecosystems? Evidence from the Bangladesh Sundarbans</span>
+                            <span class="text-sm text-emerald-700 italic block mt-1">Rahman, M.S., Donoghue, D.N.M., Bracken, L.J., 2021. CATENA. 200, 105159.</span>
+                        </div>
+
+                        <div class="pt-4">
+                            <span class="font-semibold text-gray-900 block">Salinity drives growth dynamics of the mangrove tree Sonneratia apetala Buch.-Ham. in the Sundarbans, Bangladesh</span>
+                            <span class="text-sm text-emerald-700 italic block mt-1">Rahman, M. S., Sass-Klassen, U., Zuidema, P. A., Chowdhury, M. Q. and Beeckman, H. 2020. Dendrochronologia 62, 125711.</span>
+                        </div>
+
+                        <div class="pt-4">
+                            <span class="font-semibold text-gray-900 block">The COVID-19 pandemic: a threat for forest and wildlife conservation in Bangladesh?</span>
+                            <span class="text-sm text-emerald-700 italic block mt-1">Rahman, M.S., Alam, M.A., Salekin, S., Belal, M.A.H. and Rahman, M. S. 2021. Trees, Forests and People 5, 100119.</span>
+                        </div>
                     </div>
 
-                    <div class="publication-item">
-                        <span class="item-title">Climate and salinity together control above ground carbon accumulation in the Sundarbans mangrove ecosystem</span>
-                        <span class="item-meta">Chowdhury, M. Q., Sarker, S. K., Marma, M., Rahman, M. S. and Datta, A. 2024. Ocean & Coastal Management, 255, 107242.</span>
-                    </div>
-
-                    <div class="publication-item">
-                        <span class="item-title">Variations in biophysical characteristics of mangroves along retreating and advancing shorelines</span>
-                        <span class="item-meta">Bhargava, R., Rahman, M. S., Ghosh, T. and Friess, D. A. 2024. Science of The Total Environment, 171690.</span>
-                    </div>
-
-                    <div class="publication-item">
-                        <span class="item-title">What drives carbon stocks in a mangrove forest? The role of stand structure, species diversity and functional traits</span>
-                        <span class="item-meta">Zaman, M. R., Rahman, M. S., Ahmed, S., & Zuidema, P. A. (2023). Estuarine, Coastal and Shelf Science, 108556.</span>
-                    </div>
-
-                    <div class="publication-item">
-                        <span class="item-title">Biomass estimation in mangrove forests: a comparison of allometric models incorporating species and structural information</span>
-                        <span class="item-meta">Rahman, M.S., Donoghue, D.N.M., Bracken, L.J. and Mahmood, H. 2021. Environmental Research Letters 16, 124002.</span>
-                    </div>
-
-                    <div class="publication-item">
-                        <span class="item-title">Is soil organic carbon underestimated in the largest mangrove forest ecosystems? Evidence from the Bangladesh Sundarbans</span>
-                        <span class="item-meta">Rahman, M.S., Donoghue, D.N.M., Bracken, L.J., 2021. CATENA. 200, 105159.</span>
-                    </div>
-
-                    <div class="publication-item">
-                        <span class="item-title">Salinity drives growth dynamics of the mangrove tree Sonneratia apetala Buch.-Ham. in the Sundarbans, Bangladesh</span>
-                        <span class="item-meta">Rahman, M. S., Sass-Klassen, U., Zuidema, P. A., Chowdhury, M. Q. and Beeckman, H. 2020. Dendrochronologia 62, 125711.</span>
-                    </div>
-
-                    <div class="publication-item">
-                        <span class="item-title">The COVID-19 pandemic: a threat for forest and wildlife conservation in Bangladesh?</span>
-                        <span class="item-meta">Rahman, M.S., Alam, M.A., Salekin, S., Belal, M.A.H. and Rahman, M. S. 2021. Trees, Forests and People 5, 100119.</span>
-                    </div>
-
-                    <p><em>Note: This is a selected list of publications. For a full list, please refer to the Scopus or Google Scholar profiles linked in the sidebar.</em></p>
+                    <p class="text-xs text-gray-500 bg-emerald-50/50 p-3 rounded-lg border border-emerald-100"><em>Note: This is a selected list of publications. For a full list, please refer to the Scopus or Google Scholar profiles linked in the sidebar.</em></p>
                 </section>
             </div>
         </div>

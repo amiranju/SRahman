@@ -1,6 +1,6 @@
 /**
  * Portfolio Content Management System (CMS) Logic
- * Uses Web File System Access API to read & write local HTML/JS portfolio files directly on disk.
+ * Uses Web File System Access API to read & write local HTML/JS portfolio files directly on disk with Tailwind CSS v3.
  */
 
 // Application State
@@ -143,7 +143,6 @@ function updateWorkspaceStatus(connected, folderName = '') {
     }
 }
 
-// Attempt auto loading if files are accessible or read from local disk
 async function attemptAutoDetectOrInit() {
     if (!isFileSystemAccessSupported()) {
         showToast('Note: Use Chrome/Edge for direct disk saving support.', 'warning');
@@ -155,7 +154,6 @@ async function loadAllWorkspaceFiles() {
     if (!CMSState.dirHandle) return;
 
     try {
-        // Required files to parse
         const targetFiles = [
             'index.html',
             'publications.html',
@@ -204,8 +202,6 @@ function parseAllFiles() {
     // 2.1 Parse js/components.js
     if (CMSState.files['js/components.js']) {
         const jsText = CMSState.files['js/components.js'].content;
-        
-        // Extract Sidebar details
         const sidebarMatch = jsText.match(/sidebar\.innerHTML\s*=\s*`([\s\S]*?)`;/);
         if (sidebarMatch) {
             const sidebarHtml = sidebarMatch[1];
@@ -213,16 +209,16 @@ function parseAllFiles() {
 
             const nameEl = doc.querySelector('h1');
             const roleEl = doc.querySelector('p');
-            const imgEl = doc.querySelector('.profile-img');
+            const imgEl = doc.querySelector('img');
 
             if (nameEl) CMSState.data.components.name = nameEl.innerText.trim();
             if (roleEl) CMSState.data.components.role = roleEl.innerHTML.trim();
             if (imgEl) CMSState.data.components.avatar = imgEl.getAttribute('src') || '';
 
             const socialLinks = [];
-            doc.querySelectorAll('.social-links li a').forEach(a => {
+            doc.querySelectorAll('ul li a').forEach(a => {
                 const icon = a.querySelector('i');
-                const iconClass = icon ? icon.className : 'fas fa-link';
+                const iconClass = icon ? icon.className.replace(/\b(w-6|text-brand-green)\b/g, '').trim() : 'fas fa-link';
                 const href = a.getAttribute('href') || '#';
                 const label = a.innerText.trim();
                 socialLinks.push({ label, href, iconClass });
@@ -235,46 +231,42 @@ function parseAllFiles() {
     if (CMSState.files['index.html']) {
         const doc = parser.parseFromString(CMSState.files['index.html'].content, 'text/html');
 
-        // About section
         const aboutSec = doc.getElementById('about');
         if (aboutSec) {
             CMSState.data.index.about = Array.from(aboutSec.querySelectorAll('p')).map(p => p.innerHTML.trim());
         }
 
-        // Key Areas section
         const keySec = doc.getElementById('key-areas');
         if (keySec) {
-            CMSState.data.index.keyAreas = Array.from(keySec.querySelectorAll('li')).map(li => li.innerText.trim());
+            CMSState.data.index.keyAreas = Array.from(keySec.querySelectorAll('li')).map(li => {
+                return li.innerText.replace(/^[\s\S]*?\s/, '').trim();
+            });
         }
 
-        // Education section
         const eduSec = doc.getElementById('education');
         if (eduSec) {
-            CMSState.data.index.education = Array.from(eduSec.querySelectorAll('.experience-item')).map(item => {
-                const title = item.querySelector('.item-title')?.innerText.trim() || '';
-                const meta = item.querySelector('.item-meta')?.innerText.trim() || '';
+            CMSState.data.index.education = Array.from(eduSec.querySelectorAll('.pt-4')).map(item => {
+                const title = item.querySelector('.font-semibold')?.innerText.trim() || '';
+                const meta = item.querySelector('.text-emerald-700')?.innerText.trim() || '';
                 const paras = Array.from(item.querySelectorAll('p')).map(p => p.innerHTML.trim());
                 return { title, meta, paragraphs: paras };
             });
         }
 
-        // Conferences
         const confSec = doc.getElementById('conferences');
         if (confSec) {
-            CMSState.data.index.conferences = Array.from(confSec.querySelectorAll('.experience-item')).map(item => {
-                const title = item.querySelector('.item-title')?.innerText.trim() || '';
+            CMSState.data.index.conferences = Array.from(confSec.querySelectorAll('.pt-4')).map(item => {
+                const title = item.querySelector('.font-semibold')?.innerText.trim() || '';
                 const desc = item.querySelector('p')?.innerHTML.trim() || '';
                 return { title, description: desc };
             });
         }
 
-        // Awards
         const awardsSec = doc.getElementById('awards');
         if (awardsSec) {
             CMSState.data.index.awards = Array.from(awardsSec.querySelectorAll('li')).map(li => li.innerHTML.trim());
         }
 
-        // Affiliations
         const affSec = doc.getElementById('affiliations');
         if (affSec) {
             CMSState.data.index.affiliations = Array.from(affSec.querySelectorAll('li')).map(li => li.innerHTML.trim());
@@ -286,9 +278,9 @@ function parseAllFiles() {
         const doc = parser.parseFromString(CMSState.files['publications.html'].content, 'text/html');
         const pubSec = doc.getElementById('publications');
         if (pubSec) {
-            CMSState.data.publications.items = Array.from(pubSec.querySelectorAll('.publication-item')).map(item => {
-                const title = item.querySelector('.item-title')?.innerText.trim() || '';
-                const meta = item.querySelector('.item-meta')?.innerText.trim() || '';
+            CMSState.data.publications.items = Array.from(pubSec.querySelectorAll('.pt-4')).map(item => {
+                const title = item.querySelector('.font-semibold')?.innerText.trim() || '';
+                const meta = item.querySelector('.text-emerald-700')?.innerText.trim() || '';
                 return { title, meta };
             });
 
@@ -302,30 +294,34 @@ function parseAllFiles() {
         const doc = parser.parseFromString(CMSState.files['projects.html'].content, 'text/html');
         const projSec = doc.getElementById('projects');
         if (projSec) {
-            const children = Array.from(projSec.children);
-            let currentCategory = 'current';
-
+            const h2s = Array.from(projSec.querySelectorAll('h2'));
+            const divs = Array.from(projSec.querySelectorAll('.pt-4'));
+            
             CMSState.data.projects.current = [];
             CMSState.data.projects.past = [];
 
-            children.forEach(child => {
+            let currentCategory = 'current';
+            Array.from(projSec.children).forEach(child => {
                 if (child.tagName === 'H2') {
                     if (child.innerText.toLowerCase().includes('past')) {
                         currentCategory = 'past';
                     } else {
                         currentCategory = 'current';
                     }
-                } else if (child.classList.contains('project-item')) {
-                    const title = child.querySelector('.item-title')?.innerText.trim() || '';
-                    const meta = child.querySelector('.item-meta')?.innerText.trim() || '';
-                    const desc = child.querySelector('p')?.innerHTML.trim() || '';
-                    
-                    const projectObj = { title, meta, description: desc };
-                    if (currentCategory === 'current') {
-                        CMSState.data.projects.current.push(projectObj);
-                    } else {
-                        CMSState.data.projects.past.push(projectObj);
-                    }
+                } else if (child.classList && child.classList.contains('space-y-6')) {
+                    const items = Array.from(child.querySelectorAll('.pt-4'));
+                    items.forEach(item => {
+                        const title = item.querySelector('.font-semibold')?.innerText.trim() || '';
+                        const meta = item.querySelector('.text-emerald-700')?.innerText.trim() || '';
+                        const desc = item.querySelector('p')?.innerHTML.trim() || '';
+                        
+                        const projectObj = { title, meta, description: desc };
+                        if (currentCategory === 'current') {
+                            CMSState.data.projects.current.push(projectObj);
+                        } else {
+                            CMSState.data.projects.past.push(projectObj);
+                        }
+                    });
                 }
             });
         }
@@ -359,18 +355,21 @@ function parseAllFiles() {
                     } else {
                         currentCategory = 'experiences';
                     }
-                } else if (child.classList.contains('experience-item')) {
-                    const title = child.querySelector('.item-title')?.innerText.trim() || '';
-                    const meta = child.querySelector('.item-meta')?.innerText.trim() || '';
-                    
-                    if (currentCategory === 'experiences') {
-                        const bullets = Array.from(child.querySelectorAll('ul li')).map(li => li.innerHTML.trim());
-                        const pText = child.querySelector('p')?.innerHTML.trim() || '';
-                        CMSState.data.teaching.experiences.push({ title, meta, bullets, description: pText });
-                    } else {
-                        const desc = child.querySelector('p')?.innerHTML.trim() || '';
-                        CMSState.data.teaching.trainings.push({ title, meta, description: desc });
-                    }
+                } else if (child.classList && child.classList.contains('space-y-6')) {
+                    const items = Array.from(child.querySelectorAll('.pt-4, .pt-2'));
+                    items.forEach(item => {
+                        const title = item.querySelector('.font-semibold')?.innerText.trim() || '';
+                        const meta = item.querySelector('.text-emerald-700')?.innerText.trim() || '';
+                        
+                        if (currentCategory === 'experiences') {
+                            const bullets = Array.from(item.querySelectorAll('ul li')).map(li => li.innerHTML.trim());
+                            const pText = item.querySelector('p')?.innerHTML.trim() || '';
+                            CMSState.data.teaching.experiences.push({ title, meta, bullets, description: pText });
+                        } else {
+                            const desc = item.querySelector('p')?.innerHTML.trim() || '';
+                            CMSState.data.teaching.trainings.push({ title, meta, description: desc });
+                        }
+                    });
                 }
             });
         }
@@ -465,7 +464,6 @@ function addSocialLink() {
 
 // Render Home Form
 function renderHomeForm() {
-    // About Paragraphs
     const aboutList = document.getElementById('home-about-list');
     aboutList.innerHTML = '';
     CMSState.data.index.about.forEach((para, idx) => {
@@ -481,11 +479,9 @@ function renderHomeForm() {
         aboutList.appendChild(div);
     });
 
-    // Key Areas
     const keyContainer = document.getElementById('home-key-areas');
     keyContainer.value = CMSState.data.index.keyAreas.join('\n');
 
-    // Education
     const eduList = document.getElementById('home-education-list');
     eduList.innerHTML = '';
     CMSState.data.index.education.forEach((edu, idx) => {
@@ -512,7 +508,6 @@ function renderHomeForm() {
         eduList.appendChild(div);
     });
 
-    // Conferences
     const confList = document.getElementById('home-conferences-list');
     confList.innerHTML = '';
     CMSState.data.index.conferences.forEach((conf, idx) => {
@@ -535,10 +530,7 @@ function renderHomeForm() {
         confList.appendChild(div);
     });
 
-    // Awards
     document.getElementById('home-awards').value = CMSState.data.index.awards.join('\n');
-
-    // Affiliations
     document.getElementById('home-affiliations').value = CMSState.data.index.affiliations.join('\n');
 }
 
@@ -755,10 +747,8 @@ async function saveAllFiles() {
     }
 
     try {
-        // Collect form data back into state
         syncFormValuesToState();
 
-        // Regenerate Content
         const newComponentsJs = generateComponentsJs();
         const newIndexHtml = generateIndexHtml();
         const newPublicationsHtml = generatePublicationsHtml();
@@ -767,7 +757,6 @@ async function saveAllFiles() {
         const newTeachingHtml = generateTeachingHtml();
         const newContactHtml = generateContactHtml();
 
-        // Write directly to Disk files via Handles
         await writeFileHandle('js/components.js', newComponentsJs);
         await writeFileHandle('index.html', newIndexHtml);
         await writeFileHandle('publications.html', newPublicationsHtml);
@@ -784,27 +773,21 @@ async function saveAllFiles() {
 }
 
 function syncFormValuesToState() {
-    // Sync Settings / Sidebar
     CMSState.data.components.name = document.getElementById('sidebar-name').value;
     CMSState.data.components.role = document.getElementById('sidebar-role').value;
     CMSState.data.components.avatar = document.getElementById('sidebar-avatar').value;
 
-    // Sync Home Key Areas
     const keyText = document.getElementById('home-key-areas').value;
     CMSState.data.index.keyAreas = keyText.split('\n').filter(k => k.trim() !== '');
 
-    // Sync Awards & Affiliations
     CMSState.data.index.awards = document.getElementById('home-awards').value.split('\n').filter(a => a.trim() !== '');
     CMSState.data.index.affiliations = document.getElementById('home-affiliations').value.split('\n').filter(a => a.trim() !== '');
 
-    // Sync Publications Note
     CMSState.data.publications.note = document.getElementById('publications-note').value;
 
-    // Sync Field Works
     CMSState.data.fieldworks.heading = document.getElementById('fieldworks-heading').value;
     CMSState.data.fieldworks.description = document.getElementById('fieldworks-desc').value;
 
-    // Sync Contact
     CMSState.data.contact.intro = document.getElementById('contact-intro').value;
     CMSState.data.contact.email = document.getElementById('contact-email').value;
 }
@@ -823,19 +806,45 @@ async function writeFileHandle(relPath, content) {
     await writable.write(content);
     await writable.close();
 
-    // Cache content
     CMSState.files[relPath] = { handle: fileHandle, content: content };
 }
 
 // ----------------------------------------------------
-// 5. HTML & JS CODE GENERATORS
+// 5. HTML & JS CODE GENERATORS (Tailwind CSS v3 Format)
 // ----------------------------------------------------
+const TAILWIND_HEAD = `    <!-- Google Fonts & FontAwesome -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tailwind CSS v3 Play CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'brand-green': '#2e7d32',
+                        'brand-light-green': '#4caf50',
+                        'brand-bg': '#f1f8e9',
+                        'brand-accent': '#e8f5e9',
+                    },
+                    fontFamily: {
+                        heading: ['Montserrat', 'sans-serif'],
+                        body: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>`;
+
 function generateComponentsJs() {
     const c = CMSState.data.components;
     const formattedRole = c.role.replace(/\n/g, '<br>');
 
     const socialsHtml = c.socials.map(s => {
-        return `                <li><a href="${s.href}" target="_blank"><i class="${s.iconClass}"></i> ${s.label}</a></li>`;
+        return `                <li><a href="${s.href}" target="_blank" class="flex items-center text-sm text-gray-700 hover:text-brand-green transition-colors"><i class="${s.iconClass} w-6 text-brand-green"></i> ${s.label}</a></li>`;
     }).join('\n');
 
     return `document.addEventListener('DOMContentLoaded', function() {
@@ -850,24 +859,37 @@ function initNavigation() {
 
     const currentPage = window.location.pathname.split("/").pop() || 'index.html';
 
+    const getNavClass = (page) => {
+        const isActive = currentPage === page;
+        return \`font-heading font-medium transition-colors duration-200 px-3 py-1.5 rounded-md \${
+            isActive 
+                ? 'text-brand-green bg-emerald-50 font-semibold' 
+                : 'text-gray-700 hover:text-brand-green hover:bg-emerald-50/50'
+        }\`;
+    };
+
     header.innerHTML = \`
-        <header>
-            <div class="container">
-                <nav>
-                    <div class="header-name">
-                        <a href="index.html">${c.name || 'Dr. Md. Saidur Rahman'}</a>
+        <header class="bg-white shadow-sm fixed top-0 left-0 right-0 w-full z-50 border-b border-emerald-100">
+            <div class="max-w-6xl mx-auto px-4 sm:px-6">
+                <nav class="flex justify-between items-center h-16 relative">
+                    <div class="flex items-center">
+                        <a href="index.html" class="font-heading font-bold text-lg sm:text-xl text-brand-green hover:text-emerald-800 transition-colors">
+                            ${c.name || 'Dr. Md. Saidur Rahman'}
+                        </a>
                     </div>
-                    <button id="menu-toggle" class="menu-toggle">
-                        <i class="fas fa-ellipsis-v"></i>
+                    
+                    <button id="menu-toggle" class="md:hidden text-brand-green p-2 focus:outline-none hover:bg-emerald-50 rounded-md">
+                        <i class="fas fa-bars text-xl"></i>
                     </button>
-                    <ul id="nav-menu">
-                        <li><a href="index.html" class="\${currentPage === 'index.html' ? 'active' : ''}">Home</a></li>
-                        <li><a href="publications.html" class="\${currentPage === 'publications.html' ? 'active' : ''}">Publications</a></li>
-                        <li><a href="projects.html" class="\${currentPage === 'projects.html' ? 'active' : ''}">Projects</a></li>
-                        <li><a href="fieldworks.html" class="\${currentPage === 'fieldworks.html' ? 'active' : ''}">Field Works</a></li>
-                        <li><a href="teaching.html" class="\${currentPage === 'teaching.html' ? 'active' : ''}">Teaching</a></li>
-                        <li><a href="contact.html" class="\${currentPage === 'contact.html' ? 'active' : ''}">Contact</a></li>
-                        <li><a href="CV/CV_Saidur_Rahman_UK1.pdf" target="_blank" class="cv-link">CV</a></li>
+                    
+                    <ul id="nav-menu" class="hidden md:flex items-center space-x-2 absolute md:relative top-16 md:top-0 left-0 right-0 bg-white md:bg-transparent shadow-md md:shadow-none p-4 md:p-0 border-b md:border-none border-emerald-100 flex-col md:flex-row space-y-2 md:space-y-0 w-full md:w-auto z-50">
+                        <li><a href="index.html" class="\${getNavClass('index.html')}">Home</a></li>
+                        <li><a href="publications.html" class="\${getNavClass('publications.html')}">Publications</a></li>
+                        <li><a href="projects.html" class="\${getNavClass('projects.html')}">Projects</a></li>
+                        <li><a href="fieldworks.html" class="\${getNavClass('fieldworks.html')}">Field Works</a></li>
+                        <li><a href="teaching.html" class="\${getNavClass('teaching.html')}">Teaching</a></li>
+                        <li><a href="contact.html" class="\${getNavClass('contact.html')}">Contact</a></li>
+                        <li><a href="CV/CV_Saidur_Rahman_UK1.pdf" target="_blank" class="font-heading font-semibold text-white bg-brand-green hover:bg-emerald-800 transition-colors px-4 py-1.5 rounded-md inline-block shadow-sm">CV</a></li>
                     </ul>
                 </nav>
             </div>
@@ -879,7 +901,8 @@ function initNavigation() {
 
     if (menuToggle && navMenu) {
         menuToggle.addEventListener('click', function() {
-            navMenu.classList.toggle('show');
+            navMenu.classList.toggle('hidden');
+            navMenu.classList.toggle('flex');
         });
     }
 }
@@ -889,12 +912,12 @@ function initSidebar() {
     if (!sidebar) return;
 
     sidebar.innerHTML = \`
-        <div class="sidebar">
-            <img src="${c.avatar || 'photo/profile.jpg'}" alt="${c.name || 'Profile'}" class="profile-img">
-            <h1>${c.name || ''}</h1>
-            <p>${formattedRole}</p>
+        <div class="bg-white rounded-xl shadow-md p-6 border border-emerald-100 text-center sticky top-24">
+            <img src="${c.avatar || 'photo/profile.jpg'}" alt="${c.name || 'Profile'}" class="w-44 h-44 rounded-full border-4 border-white shadow-md mx-auto mb-5 object-cover">
+            <h1 class="font-heading font-bold text-xl text-brand-green mb-2">${c.name || ''}</h1>
+            <p class="text-sm text-gray-600 mb-6 leading-relaxed">${formattedRole}</p>
             
-            <ul class="social-links">
+            <ul class="space-y-3 text-left border-t border-emerald-50 pt-5">
 ${socialsHtml}
             </ul>
         </div>
@@ -906,10 +929,10 @@ function initFooter() {
     if (!footer) return;
 
     footer.innerHTML = \`
-        <footer>
-            <div class="container">
-                <p>&copy; \${new Date().getFullYear()} ${c.name || 'Dr. Md. Saidur Rahman'}. All rights reserved.</p>
-                <p>Professor, Khulna University, Bangladesh</p>
+        <footer class="bg-brand-green text-white text-center py-8 mt-16 border-t border-emerald-800">
+            <div class="max-w-6xl mx-auto px-4 space-y-1">
+                <p class="font-medium">&copy; \${new Date().getFullYear()} ${c.name || 'Dr. Md. Saidur Rahman'}. All rights reserved.</p>
+                <p class="text-sm text-emerald-100 opacity-90">Professor, Khulna University, Bangladesh</p>
             </div>
         </footer>
     \`;
@@ -920,30 +943,30 @@ function initFooter() {
 function generateIndexHtml() {
     const idx = CMSState.data.index;
 
-    const aboutParas = idx.about.map(p => `                    <p>${p}</p>`).join('\n');
-    const keyList = idx.keyAreas.map(k => `                        <li>${k}</li>`).join('\n');
+    const aboutParas = idx.about.map(p => `                        <p>${p}</p>`).join('\n');
+    const keyList = idx.keyAreas.map(k => `                        <li class="flex items-center text-gray-700 bg-emerald-50/60 p-3 rounded-lg border border-emerald-100"><i class="fas fa-check-circle text-brand-green mr-3"></i> ${k}</li>`).join('\n');
 
     const eduHtml = idx.education.map(e => {
         let pContent = '';
         if (e.paragraphs && e.paragraphs.length > 0) {
-            pContent = e.paragraphs.map(p => `                        <p>${p}</p>`).join('\n');
+            pContent = e.paragraphs.map(p => `                            <p class="text-gray-700 text-sm mt-1">${p}</p>`).join('\n');
         }
-        return `                    <div class="experience-item">
-                        <span class="item-title">${e.title}</span>
-                        <span class="item-meta">${e.meta}</span>
+        return `                        <div class="pt-4 first:pt-0">
+                            <span class="font-semibold text-lg text-gray-900 block">${e.title}</span>
+                            <span class="text-sm text-emerald-700 font-medium italic block mb-2">${e.meta}</span>
 ${pContent}
-                    </div>`;
+                        </div>`;
     }).join('\n');
 
     const confHtml = idx.conferences.map(c => {
-        return `                    <div class="experience-item">
-                        <span class="item-title">${c.title}</span>
-                        <p>${c.description}</p>
-                    </div>`;
+        return `                        <div class="pt-4 first:pt-0">
+                            <span class="font-semibold text-gray-900 block">${c.title}</span>
+                            <p class="text-gray-700 text-sm mt-1">${c.description}</p>
+                        </div>`;
     }).join('\n');
 
-    const awardsHtml = idx.awards.map(a => `                        <li>${a}</li>`).join('\n');
-    const affHtml = idx.affiliations.map(af => `                        <li>${af}</li>`).join('\n');
+    const awardsHtml = idx.awards.map(a => `                        <li class="text-gray-700 bg-emerald-50/40 p-3 rounded-lg border border-emerald-100">${a}</li>`).join('\n');
+    const affHtml = idx.affiliations.map(af => `                        <li class="text-gray-700">${af}</li>`).join('\n');
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -958,55 +981,58 @@ ${pContent}
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
     
-    <!-- CSS -->
-    <link rel="stylesheet" href="css/styles.css">
-    <!-- FontAwesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+${TAILWIND_HEAD}
 </head>
-<body>
+<body class="bg-brand-bg font-body text-gray-900 pt-16 min-h-screen flex flex-col justify-between">
     <div id="header-placeholder"></div>
 
-    <div class="hero">
-        <div class="container"></div>
+    <div class="h-56 bg-cover bg-center relative shadow-inner" style="background-image: linear-gradient(rgba(46, 125, 50, 0.35), rgba(46, 125, 50, 0.35)), url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6"></div>
     </div>
 
-    <main class="container">
-        <div class="main-layout">
-            <div id="sidebar-placeholder"></div>
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 w-full -mt-20 relative z-10 mb-12">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-8">
+            <div id="sidebar-placeholder" class="md:col-span-4"></div>
 
-            <div class="content-area">
+            <div class="md:col-span-8 bg-white rounded-xl shadow-md p-6 sm:p-10 border border-emerald-100 space-y-10">
                 <section id="about">
-                    <h2>About Myself</h2>
+                    <h2 class="font-heading font-bold text-2xl text-brand-green border-b-2 border-emerald-100 pb-3 mb-6">About Myself</h2>
+                    <div class="space-y-4 text-gray-700 leading-relaxed text-justify">
 ${aboutParas}
+                    </div>
                 </section>
 
                 <section id="key-areas">
-                    <h2>Key Areas of Expertise </h2>
-                    <ul>
+                    <h2 class="font-heading font-bold text-2xl text-brand-green border-b-2 border-emerald-100 pb-3 mb-6">Key Areas of Expertise</h2>
+                    <ul class="grid grid-cols-1 sm:grid-cols-2 gap-3">
 ${keyList}
                     </ul>
                 </section>
 
                 <section id="education">
-                    <h2>Education</h2>
+                    <h2 class="font-heading font-bold text-2xl text-brand-green border-b-2 border-emerald-100 pb-3 mb-6">Education</h2>
+                    <div class="space-y-6 divide-y divide-emerald-50">
 ${eduHtml}
+                    </div>
                 </section>
 
                 <section id="conferences">
-                    <h2>Conferences</h2>
+                    <h2 class="font-heading font-bold text-2xl text-brand-green border-b-2 border-emerald-100 pb-3 mb-6">Conferences</h2>
+                    <div class="space-y-6 divide-y divide-emerald-50">
 ${confHtml}
+                    </div>
                 </section>
 
                 <section id="awards">
-                    <h2>Awards, Scholarships and Prizes</h2>
-                    <ul>
+                    <h2 class="font-heading font-bold text-2xl text-brand-green border-b-2 border-emerald-100 pb-3 mb-6">Awards, Scholarships and Prizes</h2>
+                    <ul class="space-y-3">
 ${awardsHtml}
                     </ul>
                 </section>
 
                 <section id="affiliations">
-                    <h2>Professional Affiliations</h2>
-                    <ul>
+                    <h2 class="font-heading font-bold text-2xl text-brand-green border-b-2 border-emerald-100 pb-3 mb-6">Professional Affiliations</h2>
+                    <ul class="space-y-3">
 ${affHtml}
                     </ul>
                 </section>
@@ -1015,8 +1041,6 @@ ${affHtml}
     </main>
 
     <div id="footer-placeholder"></div>
-
-    <!-- JS -->
     <script src="js/components.js"></script>
 </body>
 </html>
@@ -1027,11 +1051,11 @@ function generatePublicationsHtml() {
     const pub = CMSState.data.publications;
 
     const itemsHtml = pub.items.map(p => {
-        return `                    <div class="publication-item">
-                        <span class="item-title">${p.title}</span>
-                        <span class="item-meta">${p.meta}</span>
-                    </div>`;
-    }).join('\n\n');
+        return `                        <div class="pt-4 first:pt-0">
+                            <span class="font-semibold text-gray-900 block">${p.title}</span>
+                            <span class="text-sm text-emerald-700 italic block mt-1">${p.meta}</span>
+                        </div>`;
+    }).join('\n');
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -1041,24 +1065,27 @@ function generatePublicationsHtml() {
     <meta name="description" content="Publications and Journal Articles of Dr. Md. Saidur Rahman. Specialist in mangrove ecology and remote sensing.">
     <title>Publications | ${CMSState.data.components.name || 'Dr. Md. Saidur Rahman'}</title>
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-    <link rel="stylesheet" href="css/styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+${TAILWIND_HEAD}
 </head>
-<body>
+<body class="bg-brand-bg font-body text-gray-900 pt-16 min-h-screen flex flex-col justify-between">
     <div id="header-placeholder"></div>
-    <div class="hero"></div>
 
-    <main class="container">
-        <div class="main-layout">
-            <div id="sidebar-placeholder"></div>
+    <div class="h-44 bg-cover bg-center relative shadow-inner" style="background-image: linear-gradient(rgba(46, 125, 50, 0.35), rgba(46, 125, 50, 0.35)), url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');"></div>
 
-            <div class="content-area">
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 w-full -mt-16 relative z-10 mb-12">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-8">
+            <div id="sidebar-placeholder" class="md:col-span-4"></div>
+
+            <div class="md:col-span-8 bg-white rounded-xl shadow-md p-6 sm:p-10 border border-emerald-100">
                 <section id="publications">
-                    <h2>Journal Articles</h2>
+                    <h2 class="font-heading font-bold text-2xl text-brand-green border-b-2 border-emerald-100 pb-3 mb-6">Journal Articles</h2>
                     
+                    <div class="space-y-6 divide-y divide-emerald-50 mb-8">
 ${itemsHtml}
+                    </div>
 
-                    <p><em>${pub.note || 'Note: This is a selected list of publications.'}</em></p>
+                    <p class="text-xs text-gray-500 bg-emerald-50/50 p-3 rounded-lg border border-emerald-100"><em>${pub.note || 'Note: This is a selected list of publications.'}</em></p>
                 </section>
             </div>
         </div>
@@ -1075,20 +1102,20 @@ function generateProjectsHtml() {
     const proj = CMSState.data.projects;
 
     const currHtml = proj.current.map(p => {
-        const descHtml = p.description ? `\n                        <p>${p.description}</p>` : '';
-        return `                    <div class="project-item">
-                        <span class="item-title">${p.title}</span>
-                        <span class="item-meta">${p.meta}</span>${descHtml}
-                    </div>`;
-    }).join('\n\n');
+        const descHtml = p.description ? `\n                            <p class="text-gray-700 text-sm mt-2">${p.description}</p>` : '';
+        return `                        <div class="pt-4 first:pt-0">
+                            <span class="font-semibold text-gray-900 block text-lg">${p.title}</span>
+                            <span class="text-sm text-emerald-700 italic block mt-1">${p.meta}</span>${descHtml}
+                        </div>`;
+    }).join('\n');
 
     const pastHtml = proj.past.map(p => {
-        const descHtml = p.description ? `\n                        <p>${p.description}</p>` : '';
-        return `                    <div class="project-item">
-                        <span class="item-title">${p.title}</span>
-                        <span class="item-meta">${p.meta}</span>${descHtml}
-                    </div>`;
-    }).join('\n\n');
+        const descHtml = p.description ? `\n                            <p class="text-gray-700 text-sm mt-2">${p.description}</p>` : '';
+        return `                        <div class="pt-4 first:pt-0">
+                            <span class="font-semibold text-gray-900 block">${p.title}</span>
+                            <span class="text-sm text-emerald-700 italic block mt-1">${p.meta}</span>${descHtml}
+                        </div>`;
+    }).join('\n');
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -1098,26 +1125,31 @@ function generateProjectsHtml() {
     <meta name="description" content="Research projects and experiences of Dr. Md. Saidur Rahman. Focus on mangrove restoration and climate change adaptation.">
     <title>Projects | ${CMSState.data.components.name || 'Dr. Md. Saidur Rahman'}</title>
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-    <link rel="stylesheet" href="css/styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+${TAILWIND_HEAD}
 </head>
-<body>
+<body class="bg-brand-bg font-body text-gray-900 pt-16 min-h-screen flex flex-col justify-between">
     <div id="header-placeholder"></div>
-    <div class="hero"></div>
 
-    <main class="container">
-        <div class="main-layout">
-            <div id="sidebar-placeholder"></div>
+    <div class="h-44 bg-cover bg-center relative shadow-inner" style="background-image: linear-gradient(rgba(46, 125, 50, 0.35), rgba(46, 125, 50, 0.35)), url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');"></div>
 
-            <div class="content-area">
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 w-full -mt-16 relative z-10 mb-12">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-8">
+            <div id="sidebar-placeholder" class="md:col-span-4"></div>
+
+            <div class="md:col-span-8 bg-white rounded-xl shadow-md p-6 sm:p-10 border border-emerald-100 space-y-10">
                 <section id="projects">
-                    <h2>Current Research Projects</h2>
+                    <h2 class="font-heading font-bold text-2xl text-brand-green border-b-2 border-emerald-100 pb-3 mb-6">Current Research Projects</h2>
                     
+                    <div class="space-y-6 divide-y divide-emerald-50 mb-10">
 ${currHtml}
+                    </div>
 
-                    <h2>Past Research Projects</h2>
+                    <h2 class="font-heading font-bold text-2xl text-brand-green border-b-2 border-emerald-100 pb-3 mb-6">Past Research Projects</h2>
 
+                    <div class="space-y-6 divide-y divide-emerald-50">
 ${pastHtml}
+                    </div>
                 </section>
             </div>
         </div>
@@ -1140,23 +1172,25 @@ function generateFieldworksHtml() {
     <meta name="description" content="Field works and ecological surveys conducted by Dr. Md. Saidur Rahman.">
     <title>Field Works | ${CMSState.data.components.name || 'Dr. Md. Saidur Rahman'}</title>
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-    <link rel="stylesheet" href="css/styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+${TAILWIND_HEAD}
 </head>
-<body>
+<body class="bg-brand-bg font-body text-gray-900 pt-16 min-h-screen flex flex-col justify-between">
     <div id="header-placeholder"></div>
-    <div class="hero"></div>
 
-    <main class="container">
-        <div class="main-layout">
-            <div id="sidebar-placeholder"></div>
+    <div class="h-44 bg-cover bg-center relative shadow-inner" style="background-image: linear-gradient(rgba(46, 125, 50, 0.35), rgba(46, 125, 50, 0.35)), url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');"></div>
 
-            <div class="content-area">
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 w-full -mt-16 relative z-10 mb-12">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-8">
+            <div id="sidebar-placeholder" class="md:col-span-4"></div>
+
+            <div class="md:col-span-8 bg-white rounded-xl shadow-md p-6 sm:p-10 border border-emerald-100">
                 <section id="field-works">
-                    <h2>${fw.heading || 'Field Works'}</h2>
-                    <p>${fw.description || 'Information about field works, ecological surveys, and site visits will be updated soon.'}</p>
-                    <div style="height: 300px; background-color: #f9f9f9; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; margin-top: 20px;">
-                        <span style="color: #999;">Gallery coming soon...</span>
+                    <h2 class="font-heading font-bold text-2xl text-brand-green border-b-2 border-emerald-100 pb-3 mb-6">${fw.heading || 'Field Works'}</h2>
+                    <p class="text-gray-700 leading-relaxed mb-6">${fw.description || 'Information about field works, ecological surveys, and site visits will be updated soon.'}</p>
+                    
+                    <div class="h-72 bg-emerald-50/50 border-2 border-dashed border-emerald-200 rounded-xl flex items-center justify-center text-emerald-600 font-medium">
+                        <span class="flex items-center gap-2"><i class="fas fa-images"></i> Gallery coming soon...</span>
                     </div>
                 </section>
             </div>
@@ -1176,23 +1210,23 @@ function generateTeachingHtml() {
     const expHtml = t.experiences.map(e => {
         let listItems = '';
         if (e.bullets && e.bullets.length > 0) {
-            listItems = `\n                        <ul>\n` + e.bullets.map(b => `                            <li>${b}</li>`).join('\n') + `\n                        </ul>`;
+            listItems = `\n                            <ul class="list-disc list-inside space-y-2 text-gray-700 text-sm pl-2">\n` + e.bullets.map(b => `                                <li>${b}</li>`).join('\n') + `\n                            </ul>`;
         }
-        let descP = e.description ? `\n                        <p>${e.description}</p>` : '';
+        let descP = e.description ? `\n                            <p class="text-gray-700 text-sm mt-2">${e.description}</p>` : '';
 
-        return `                    <div class="experience-item">
-                        <span class="item-title">${e.title}</span>
-                        <span class="item-meta">${e.meta}</span>${listItems}${descP}
-                    </div>`;
-    }).join('\n\n');
+        return `                        <div class="pt-4 first:pt-0">
+                            <span class="font-semibold text-gray-900 block text-lg">${e.title}</span>
+                            <span class="text-sm text-emerald-700 italic block mt-1 mb-3">${e.meta}</span>${listItems}${descP}
+                        </div>`;
+    }).join('\n');
 
     const trainHtml = t.trainings.map(tr => {
-        let descP = tr.description ? `\n                        <p>${tr.description}</p>` : '';
-        return `                    <div class="experience-item">
-                        <span class="item-title">${tr.title}</span>
-                        <span class="item-meta">${tr.meta}</span>${descP}
-                    </div>`;
-    }).join('\n\n');
+        let descP = tr.description ? `\n                            <p class="text-gray-700 text-sm mt-2">${tr.description}</p>` : '';
+        return `                        <div class="pt-2">
+                            <span class="font-semibold text-gray-900 block text-lg">${tr.title}</span>
+                            <span class="text-sm text-emerald-700 italic block mt-1">${tr.meta}</span>${descP}
+                        </div>`;
+    }).join('\n');
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -1202,25 +1236,30 @@ function generateTeachingHtml() {
     <meta name="description" content="Teaching experiences, courses, and trainings conducted by Dr. Md. Saidur Rahman at Khulna University.">
     <title>Teaching | ${CMSState.data.components.name || 'Dr. Md. Saidur Rahman'}</title>
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-    <link rel="stylesheet" href="css/styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+${TAILWIND_HEAD}
 </head>
-<body>
+<body class="bg-brand-bg font-body text-gray-900 pt-16 min-h-screen flex flex-col justify-between">
     <div id="header-placeholder"></div>
-    <div class="hero"></div>
 
-    <main class="container">
-        <div class="main-layout">
-            <div id="sidebar-placeholder"></div>
+    <div class="h-44 bg-cover bg-center relative shadow-inner" style="background-image: linear-gradient(rgba(46, 125, 50, 0.35), rgba(46, 125, 50, 0.35)), url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');"></div>
 
-            <div class="content-area">
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 w-full -mt-16 relative z-10 mb-12">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-8">
+            <div id="sidebar-placeholder" class="md:col-span-4"></div>
+
+            <div class="md:col-span-8 bg-white rounded-xl shadow-md p-6 sm:p-10 border border-emerald-100 space-y-10">
                 <section id="teaching">
-                    <h2>Teaching Experiences</h2>
+                    <h2 class="font-heading font-bold text-2xl text-brand-green border-b-2 border-emerald-100 pb-3 mb-6">Teaching Experiences</h2>
                     
+                    <div class="space-y-6 divide-y divide-emerald-50 mb-10">
 ${expHtml}
+                    </div>
 
-                    <h2>Trainings Conducted</h2>
+                    <h2 class="font-heading font-bold text-2xl text-brand-green border-b-2 border-emerald-100 pb-3 mb-6">Trainings Conducted</h2>
+                    <div class="space-y-6">
 ${trainHtml}
+                    </div>
                 </section>
             </div>
         </div>
@@ -1244,24 +1283,29 @@ function generateContactHtml() {
     <meta name="description" content="Contact information for Dr. Md. Saidur Rahman. Get in touch for research collaborations and academic inquiries.">
     <title>Contact | ${CMSState.data.components.name || 'Dr. Md. Saidur Rahman'}</title>
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-    <link rel="stylesheet" href="css/styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+${TAILWIND_HEAD}
 </head>
-<body>
+<body class="bg-brand-bg font-body text-gray-900 pt-16 min-h-screen flex flex-col justify-between">
     <div id="header-placeholder"></div>
-    <div class="hero"></div>
 
-    <main class="container">
-        <div class="main-layout">
-            <div id="sidebar-placeholder"></div>
+    <div class="h-44 bg-cover bg-center relative shadow-inner" style="background-image: linear-gradient(rgba(46, 125, 50, 0.35), rgba(46, 125, 50, 0.35)), url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');"></div>
 
-            <div class="content-area">
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 w-full -mt-16 relative z-10 mb-12">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-8">
+            <div id="sidebar-placeholder" class="md:col-span-4"></div>
+
+            <div class="md:col-span-8 bg-white rounded-xl shadow-md p-6 sm:p-10 border border-emerald-100">
                 <section id="contact">
-                    <h2>Contact Information</h2>
-                    <p>${c.intro || 'For research collaborations, academic inquiries, or student supervision, please feel free to reach out via the following channels:'}</p>
+                    <h2 class="font-heading font-bold text-2xl text-brand-green border-b-2 border-emerald-100 pb-3 mb-6">Contact Information</h2>
+                    <p class="text-gray-700 leading-relaxed mb-6">${c.intro || 'For research collaborations, academic inquiries, or student supervision, please feel free to reach out via the following channels:'}</p>
                     
-                    <div style="margin-top: 30px;">
-                        <p><strong><i class="fas fa-envelope" style="color: var(--primary-green); width: 25px;"></i> Email:</strong> <a href="mailto:${c.email}">${c.email}</a></p>
+                    <div class="bg-emerald-50/50 p-6 rounded-xl border border-emerald-100 max-w-lg">
+                        <p class="flex items-center text-gray-800 font-medium">
+                            <i class="fas fa-envelope text-brand-green text-xl w-8"></i> 
+                            <span class="mr-2">Email:</span> 
+                            <a href="mailto:${c.email}" class="text-brand-green hover:underline font-semibold">${c.email}</a>
+                        </p>
                     </div>
                 </section>
             </div>
@@ -1283,7 +1327,6 @@ function openPreviewModal() {
     const modal = document.getElementById('modal-preview');
     const frame = document.getElementById('preview-iframe');
     
-    // Build preview document in iframe memory
     const previewContent = generateIndexHtml();
     frame.srcdoc = previewContent;
     modal.classList.add('active');

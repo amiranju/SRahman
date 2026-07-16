@@ -5,54 +5,86 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Research projects and experiences of Dr. Md. Saidur Rahman. Focus on mangrove restoration and climate change adaptation.">
     <title>Projects | Dr. Md. Saidur Rahman</title>
+    
+    <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-    <link rel="stylesheet" href="css/styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Google Fonts & FontAwesome -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tailwind CSS v3 Play CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'brand-green': '#2e7d32',
+                        'brand-light-green': '#4caf50',
+                        'brand-bg': '#f1f8e9',
+                        'brand-accent': '#e8f5e9',
+                    },
+                    fontFamily: {
+                        heading: ['Montserrat', 'sans-serif'],
+                        body: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
 </head>
-<body>
+<body class="bg-brand-bg font-body text-gray-900 pt-16 min-h-screen flex flex-col justify-between">
     <div id="header-placeholder"></div>
-    <div class="hero"></div>
 
-    <main class="container">
-        <div class="main-layout">
-            <div id="sidebar-placeholder"></div>
+    <div class="h-44 bg-cover bg-center relative shadow-inner" style="background-image: linear-gradient(rgba(46, 125, 50, 0.35), rgba(46, 125, 50, 0.35)), url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');"></div>
 
-            <div class="content-area">
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 w-full -mt-16 relative z-10 mb-12">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-8">
+            <div id="sidebar-placeholder" class="md:col-span-4"></div>
+
+            <div class="md:col-span-8 bg-white rounded-xl shadow-md p-6 sm:p-10 border border-emerald-100 space-y-10">
                 <section id="projects">
-                    <h2>Current Research Projects</h2>
+                    <h2 class="font-heading font-bold text-2xl text-brand-green border-b-2 border-emerald-100 pb-3 mb-6">Current Research Projects</h2>
                     
-                    <div class="project-item">
-                        <span class="item-title">Mapping top-dying disease of the Heritiera fomes tree species in the Bangladesh Sundarbans</span>
-                        <span class="item-meta">Role: Project Director | Funded by: Khulna University Research and Innovation Cell</span>
-                        <p>Investigation into the causes and spatial extent of top-dying disease in the iconic Sundri tree species.</p>
+                    <div class="space-y-6 divide-y divide-emerald-50 mb-10">
+                        <div class="pt-4 first:pt-0">
+                            <span class="font-semibold text-gray-900 block text-lg">Mapping top-dying disease of the Heritiera fomes tree species in the Bangladesh Sundarbans</span>
+                            <span class="text-sm text-emerald-700 italic block mt-1">Role: Project Director | Funded by: Khulna University Research and Innovation Cell</span>
+                            <p class="text-gray-700 text-sm mt-2">Investigation into the causes and spatial extent of top-dying disease in the iconic Sundri tree species.</p>
+                        </div>
+
+                        <div class="pt-4">
+                            <span class="font-semibold text-gray-900 block text-lg">Mapping Bi-Directional Ecosystem Services of Nature-Based Solutions: A Case Study of Coastal Forests in Bangladesh</span>
+                            <span class="text-sm text-emerald-700 italic block mt-1">Role: Forestry Expert | Collaboration with: ICCCAD | Funded by: Bangladesh Forest Department</span>
+                            <p class="text-gray-700 text-sm mt-2">Studying the role of coastal forests as nature-based solutions for disaster risk reduction and ecosystem service provision.</p>
+                        </div>
                     </div>
 
-                    <div class="project-item">
-                        <span class="item-title">Mapping Bi-Directional Ecosystem Services of Nature-Based Solutions: A Case Study of Coastal Forests in Bangladesh</span>
-                        <span class="item-meta">Role: Forestry Expert | Collaboration with: ICCCAD | Funded by: Bangladesh Forest Department</span>
-                        <p>Studying the role of coastal forests as nature-based solutions for disaster risk reduction and ecosystem service provision.</p>
-                    </div>
+                    <h2 class="font-heading font-bold text-2xl text-brand-green border-b-2 border-emerald-100 pb-3 mb-6">Past Research Projects</h2>
 
-                    <h2>Past Research Projects</h2>
+                    <div class="space-y-6 divide-y divide-emerald-50">
+                        <div class="pt-4 first:pt-0">
+                            <span class="font-semibold text-gray-900 block">Mapping the impact of climate change on vegetation dynamics in the Sundarbans</span>
+                            <span class="text-sm text-emerald-700 italic block mt-1">Role: Associate Investigator | Location: Khulna, Bangladesh</span>
+                        </div>
 
-                    <div class="project-item">
-                        <span class="item-title">Mapping the impact of climate change on vegetation dynamics in the Sundarbans</span>
-                        <span class="item-meta">Role: Associate Investigator | Location: Khulna, Bangladesh</span>
-                    </div>
+                        <div class="pt-4">
+                            <span class="font-semibold text-gray-900 block">Analyzing stand stratification, species diversity and structure of the Sundarbans mangrove forest</span>
+                            <span class="text-sm text-emerald-700 italic block mt-1">Role: Associate Investigator | Funded by: Ministry of Science and ICT, Bangladesh</span>
+                        </div>
 
-                    <div class="project-item">
-                        <span class="item-title">Analyzing stand stratification, species diversity and structure of the Sundarbans mangrove forest</span>
-                        <span class="item-meta">Role: Associate Investigator | Funded by: Ministry of Science and ICT, Bangladesh</span>
-                    </div>
+                        <div class="pt-4">
+                            <span class="font-semibold text-gray-900 block">Home gardening for biodiversity conservation and livelihood options: an address towards climate change and poverty alleviation in Bangladesh</span>
+                            <span class="text-sm text-emerald-700 italic block mt-1">Role: Associate Investigator | Funded by: Ministry of Science and ICT, Bangladesh</span>
+                        </div>
 
-                    <div class="project-item">
-                        <span class="item-title">Home gardening for biodiversity conservation and livelihood options: an address towards climate change and poverty alleviation in Bangladesh</span>
-                        <span class="item-meta">Role: Associate Investigator | Funded by: Ministry of Science and ICT, Bangladesh</span>
-                    </div>
-
-                    <div class="project-item">
-                        <span class="item-title">Effect of salinity on the germination and growth of Amur (Amoora cucullata) and Passur (Xylocarpus mekongensis)</span>
-                        <span class="item-meta">Role: Project Director | Funded by: Khulna University Research Cell</span>
+                        <div class="pt-4">
+                            <span class="font-semibold text-gray-900 block">Effect of salinity on the germination and growth of Amur (Amoora cucullata) and Passur (Xylocarpus mekongensis)</span>
+                            <span class="text-sm text-emerald-700 italic block mt-1">Role: Project Director | Funded by: Khulna University Research Cell</span>
+                        </div>
                     </div>
                 </section>
             </div>
