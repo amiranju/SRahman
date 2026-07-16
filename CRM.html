@@ -78,12 +78,9 @@
         <div class="cms-sidebar-footer">
             <div class="workspace-status-card">
                 <div class="status-indicator">
-                    <div id="status-dot" class="dot"></div>
-                    <span id="status-text">Not Connected</span>
+                    <div id="status-dot" class="dot connected"></div>
+                    <span id="status-text">Workspace Connected</span>
                 </div>
-                <button id="btn-select-dir" class="btn btn-secondary btn-sm" style="width:100%;">
-                    <i class="fas fa-folder-open"></i> Select Repo Folder
-                </button>
             </div>
         </div>
     </aside>
@@ -109,6 +106,23 @@
         <!-- CMS Application Body -->
         <div class="cms-body">
             
+            <!-- Local file:// security permission banner (displays if browser blocks file:// fetch) -->
+            <div id="local-file-banner" class="card-panel" style="display:none; background: #e8f5e9; border: 2px solid #2e7d32; margin-bottom: 24px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px;">
+                    <div>
+                        <h2 style="font-size:1.15rem; color:#2e7d32; margin-bottom:4px; font-weight:700;">
+                            <i class="fas fa-folder-open"></i> Local Browser Permission Required
+                        </h2>
+                        <p style="color:#333; font-size:0.9rem;">
+                            When opening <code>CRM.html</code> directly from your disk (<code>file://</code>), browser security requires a 1-second folder selection to automatically load and save your HTML & image files directly onto disk.
+                        </p>
+                    </div>
+                    <button class="btn btn-primary" onclick="requestDirectoryAccess()">
+                        <i class="fas fa-folder-tree"></i> Open Repository Folder
+                    </button>
+                </div>
+            </div>
+
             <!-- TAB: Dashboard Overview -->
             <div id="tab-dashboard" class="tab-pane active">
                 <div class="card-panel" style="background: linear-gradient(135deg, #e8f5e9, #f1f8e9); border-color: var(--border-color);">
@@ -117,13 +131,10 @@
                             <h2 style="font-size:1.4rem; color:var(--primary-green); margin-bottom:6px;">
                                 <i class="fas fa-rocket"></i> Welcome to your Local Content Management System
                             </h2>
-                            <p style="color:var(--text-secondary); max-width:700px;">
-                                Easily manage your static website content locally in your browser. Click <strong>"Select Repo Folder"</strong> to grant direct disk access, modify any page sections, and click <strong>"Save All Changes"</strong> to update your static HTML files.
+                            <p style="color:var(--text-secondary); max-width:750px;">
+                                Your workspace portfolio content is automatically loaded and populated. Edit any section using the sidebar navigation and click <strong>"Save All Changes"</strong> to save updates directly to disk!
                             </p>
                         </div>
-                        <button id="btn-select-dir-hero" class="btn btn-primary">
-                            <i class="fas fa-folder-tree"></i> Connect Workspace Folder
-                        </button>
                     </div>
                 </div>
 
@@ -156,11 +167,10 @@
                         <h2><i class="fas fa-workflow"></i> How to use this Portfolio CMS</h2>
                     </div>
                     <ol style="margin-left: 20px; line-height: 1.8; color: var(--text-secondary);">
-                        <li><strong>Step 1:</strong> Pull or clone your repository onto your local PC.</li>
-                        <li><strong>Step 2:</strong> Open <code>CRM.html</code> in Chrome, Edge, Brave, or Safari.</li>
-                        <li><strong>Step 3:</strong> Click <mark style="background:var(--primary-light); color:var(--primary-green); padding:2px 8px; border-radius:4px; font-weight:600;">Select Repo Folder</mark> in the sidebar or top right and choose your repository directory.</li>
-                        <li><strong>Step 4:</strong> Edit any page (About, Publications, Projects, Education, etc.) using the sidebar options.</li>
-                        <li><strong>Step 5:</strong> Click <mark style="background:var(--primary-light); color:var(--primary-green); padding:2px 8px; border-radius:4px; font-weight:600;">Save All Changes</mark> to write the updated <code>.html</code> files directly to your hard drive.</li>
+                        <li><strong>Step 1:</strong> Double-click <code>CRM.html</code> on your computer to open the dashboard. Your workspace files are loaded automatically!</li>
+                        <li><strong>Step 2:</strong> Edit any section (About, Publications, Projects, Education, etc.) using the left navigation menu.</li>
+                        <li><strong>Step 3:</strong> Click <mark style="background:var(--primary-light); color:var(--primary-green); padding:2px 8px; border-radius:4px; font-weight:600;">Save All Changes</mark> in the top right header to update your static files.</li>
+                        <li><strong>Step 4:</strong> Commit and push your local repo to GitHub to publish your updates live!</li>
                     </ol>
                 </div>
             </div>
@@ -179,9 +189,26 @@
                         <label class="form-label">Role & Designation (Line breaks allowed)</label>
                         <textarea id="sidebar-role" class="form-control" rows="2" placeholder="Professor of Forestry and Wood Technology&#10;Khulna University, Bangladesh"></textarea>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Profile Image Path</label>
-                        <input type="text" id="sidebar-avatar" class="form-control" placeholder="photo/profile.jpg">
+
+                    <!-- Profile Photo Selection & Management -->
+                    <div class="form-group" style="background:var(--primary-light); padding:16px; border-radius:10px; border:1px solid var(--border-color);">
+                        <label class="form-label" style="color:var(--primary-green); font-size:0.95rem;">Profile Picture Management</label>
+                        <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap; margin-top:10px;">
+                            <img id="avatar-preview-img" src="photo/profile.jpg" alt="Profile Thumbnail" style="width:90px; height:90px; border-radius:50%; object-fit:cover; border:3px solid #fff; box-shadow:var(--shadow-md);">
+                            <div style="flex-grow:1;">
+                                <input type="file" id="avatar-file-input" accept="image/*" style="display:none;" onchange="handleAvatarFileSelect(event)">
+                                <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('avatar-file-input').click()">
+                                    <i class="fas fa-camera"></i> Select New Image from Computer
+                                </button>
+                                <p style="font-size:0.8rem; color:var(--text-muted); margin-top:6px;">
+                                    Selecting a new image will automatically copy the photo file to the <code>photo/</code> directory upon saving.
+                                </p>
+                            </div>
+                        </div>
+                        <div style="margin-top:12px;">
+                            <label class="form-label">Saved Image Path in Code</label>
+                            <input type="text" id="sidebar-avatar" class="form-control" placeholder="photo/profile.jpg">
+                        </div>
                     </div>
                 </div>
 

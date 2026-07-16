@@ -1,12 +1,13 @@
 /**
  * Portfolio Content Management System (CMS) Logic
- * Uses Web File System Access API to read & write local HTML/JS portfolio files directly on disk with Tailwind CSS v3.
+ * Auto-detects local workspace files, supports photo uploading into photo/ folder, and direct disk saving.
  */
 
 // Application State
 const CMSState = {
     dirHandle: null,
-    files: {}, // filename -> file content string or file handle
+    files: {}, // filename -> content string
+    pendingAvatarFile: null, // { filename, relPath, blob }
     modified: new Set(),
     data: {
         components: {
@@ -47,11 +48,11 @@ const CMSState = {
     }
 };
 
-// DOM Elements & Event Listeners
+// DOM Initialization
 document.addEventListener('DOMContentLoaded', () => {
     initNavigation();
     initEventListeners();
-    attemptAutoDetectOrInit();
+    autoLoadWorkspaceFiles();
 });
 
 // Sidebar Navigation Tabs
@@ -79,18 +80,14 @@ function initNavigation() {
 }
 
 function initEventListeners() {
-    // Workspace Directory Selector
-    document.getElementById('btn-select-dir').addEventListener('click', selectWorkspaceDirectory);
-    document.getElementById('btn-select-dir-hero').addEventListener('click', selectWorkspaceDirectory);
-
-    // Save Buttons
+    // Save Button
     document.getElementById('btn-save-all').addEventListener('click', saveAllFiles);
 
-    // Preview Modal
+    // Live Preview Modal
     document.getElementById('btn-preview').addEventListener('click', openPreviewModal);
     document.getElementById('btn-close-preview').addEventListener('click', closePreviewModal);
 
-    // Modal Background Clicks
+    // Modal Background Overlay Clicks
     document.querySelectorAll('.modal-overlay').forEach(modal => {
         modal.addEventListener('click', (e) => {
             if (e.target === modal) modal.classList.remove('active');
@@ -98,28 +95,95 @@ function initEventListeners() {
     });
 }
 
-// Check if File System Access API is supported
-function isFileSystemAccessSupported() {
-    return 'showDirectoryPicker' in window;
+// Handle Profile Photo File Selection
+function handleAvatarFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const relPath = `photo/${file.name}`;
+    
+    // Immediate thumbnail preview
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+        document.getElementById('avatar-preview-img').src = evt.target.result;
+    };
+    reader.readAsDataURL(file);
+
+    // Update text input & state
+    document.getElementById('sidebar-avatar').value = relPath;
+    CMSState.pendingAvatarFile = {
+        filename: file.name,
+        relPath: relPath,
+        blob: file
+    };
+
+    showToast(`Selected new photo: ${relPath}. Click "Save All Changes" to save to disk!`, 'success');
 }
 
-// 1. Select Workspace Directory
-async function selectWorkspaceDirectory() {
-    if (!isFileSystemAccessSupported()) {
-        showToast('File System Access API is not supported in this browser. Please use Chrome, Edge, Safari, or Opera.', 'error');
+// ----------------------------------------------------
+// 1. AUTOMATIC WORKSPACE FILE DISCOVERY & LOADING
+// ----------------------------------------------------
+async function autoLoadWorkspaceFiles() {
+    const targetFiles = [
+        'index.html',
+        'publications.html',
+        'projects.html',
+        'fieldworks.html',
+        'teaching.html',
+        'contact.html',
+        'js/components.js'
+    ];
+
+    let loadedCount = 0;
+
+    for (const relPath of targetFiles) {
+        try {
+            const response = await fetch(`./${relPath}`, { cache: 'no-cache' });
+            if (response.ok) {
+                const text = await response.text();
+                CMSState.files[relPath] = { content: text };
+                loadedCount++;
+            }
+        } catch (e) {
+            // file:// cross-origin restriction in modern browsers
+        }
+    }
+
+    if (loadedCount > 0) {
+        parseAllFiles();
+        renderAllForms();
+        updateWorkspaceStatus(true, 'HTTP Auto-Detected');
+        showToast('Local workspace loaded automatically!', 'success');
+    } else {
+        updateWorkspaceStatus(false);
+        showLocalFileNotice();
+    }
+}
+
+function showLocalFileNotice() {
+    const banner = document.getElementById('local-file-banner');
+    if (banner) {
+        banner.style.display = 'block';
+    }
+}
+
+async function requestDirectoryAccess() {
+    if (!('showDirectoryPicker' in window)) {
+        showToast('Your browser does not support local directory access. Please use Chrome, Edge, or Brave.', 'error');
         return;
     }
 
     try {
-        const dirHandle = await window.showDirectoryPicker({
-            mode: 'readwrite'
-        });
-
+        const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
         CMSState.dirHandle = dirHandle;
-        updateWorkspaceStatus(true, dirHandle.name);
         
-        showToast(`Workspace folder '${dirHandle.name}' connected! Loading files...`, 'success');
-        await loadAllWorkspaceFiles();
+        await readWorkspaceFromDirHandle(dirHandle);
+
+        const banner = document.getElementById('local-file-banner');
+        if (banner) banner.style.display = 'none';
+
+        updateWorkspaceStatus(true, dirHandle.name);
+        showToast(`Repository folder '${dirHandle.name}' connected! All files loaded.`, 'success');
     } catch (err) {
         if (err.name !== 'AbortError') {
             console.error('Error selecting directory:', err);
@@ -128,73 +192,55 @@ async function selectWorkspaceDirectory() {
     }
 }
 
-function updateWorkspaceStatus(connected, folderName = '') {
+async function readWorkspaceFromDirHandle(dirHandle) {
+    const targetFiles = [
+        'index.html',
+        'publications.html',
+        'projects.html',
+        'fieldworks.html',
+        'teaching.html',
+        'contact.html',
+        'js/components.js'
+    ];
+
+    for (const relPath of targetFiles) {
+        try {
+            let fileHandle;
+            if (relPath.includes('/')) {
+                const parts = relPath.split('/');
+                const subDir = await dirHandle.getDirectoryHandle(parts[0]);
+                fileHandle = await subDir.getFileHandle(parts[1]);
+            } else {
+                fileHandle = await dirHandle.getFileHandle(relPath);
+            }
+
+            const file = await fileHandle.getFile();
+            const text = await file.text();
+            CMSState.files[relPath] = { content: text };
+        } catch (e) {
+            console.warn(`Could not load ${relPath} from handle:`, e);
+        }
+    }
+
+    parseAllFiles();
+    renderAllForms();
+}
+
+function updateWorkspaceStatus(connected, detail = '') {
     const dot = document.getElementById('status-dot');
     const text = document.getElementById('status-text');
     
     if (connected) {
         dot.classList.add('connected');
-        text.innerText = `Linked: ${folderName}`;
-        document.getElementById('btn-select-dir').innerHTML = `<i class="fas fa-folder-check"></i> ${folderName}`;
+        text.innerText = `Workspace Ready ${detail ? '(' + detail + ')' : ''}`;
     } else {
         dot.classList.remove('connected');
-        text.innerText = 'Not Connected';
-        document.getElementById('btn-select-dir').innerHTML = `<i class="fas fa-folder-open"></i> Select Repo Folder`;
-    }
-}
-
-async function attemptAutoDetectOrInit() {
-    if (!isFileSystemAccessSupported()) {
-        showToast('Note: Use Chrome/Edge for direct disk saving support.', 'warning');
-    }
-}
-
-// Load Files from Workspace Directory
-async function loadAllWorkspaceFiles() {
-    if (!CMSState.dirHandle) return;
-
-    try {
-        const targetFiles = [
-            'index.html',
-            'publications.html',
-            'projects.html',
-            'fieldworks.html',
-            'teaching.html',
-            'contact.html',
-            'js/components.js'
-        ];
-
-        for (const fileRelPath of targetFiles) {
-            try {
-                let fileHandle;
-                if (fileRelPath.includes('/')) {
-                    const parts = fileRelPath.split('/');
-                    const subDir = await CMSState.dirHandle.getDirectoryHandle(parts[0]);
-                    fileHandle = await subDir.getFileHandle(parts[1]);
-                } else {
-                    fileHandle = await CMSState.dirHandle.getFileHandle(fileRelPath);
-                }
-
-                const file = await fileHandle.getFile();
-                const text = await file.text();
-                CMSState.files[fileRelPath] = { handle: fileHandle, content: text };
-            } catch (e) {
-                console.warn(`Could not load ${fileRelPath}:`, e);
-            }
-        }
-
-        // Parse Loaded Files into Data Models
-        parseAllFiles();
-        renderAllForms();
-        showToast('All portfolio pages loaded successfully!', 'success');
-    } catch (err) {
-        console.error('Error loading files:', err);
-        showToast('Error reading files: ' + err.message, 'error');
+        text.innerText = 'Local File Access Required';
     }
 }
 
 // ----------------------------------------------------
-// 2. PARSING LOGIC (HTML DOM Parser)
+// 2. PARSING LOGIC (DOM Parser)
 // ----------------------------------------------------
 function parseAllFiles() {
     const parser = new DOMParser();
@@ -294,9 +340,6 @@ function parseAllFiles() {
         const doc = parser.parseFromString(CMSState.files['projects.html'].content, 'text/html');
         const projSec = doc.getElementById('projects');
         if (projSec) {
-            const h2s = Array.from(projSec.querySelectorAll('h2'));
-            const divs = Array.from(projSec.querySelectorAll('.pt-4'));
-            
             CMSState.data.projects.current = [];
             CMSState.data.projects.past = [];
 
@@ -415,6 +458,11 @@ function renderSidebarForm() {
     document.getElementById('sidebar-name').value = c.name || '';
     document.getElementById('sidebar-role').value = c.role.replace(/<br\s*\/?>/gi, '\n') || '';
     document.getElementById('sidebar-avatar').value = c.avatar || '';
+
+    const imgPreview = document.getElementById('avatar-preview-img');
+    if (imgPreview) {
+        imgPreview.src = c.avatar || 'photo/profile.jpg';
+    }
 
     const socialsContainer = document.getElementById('sidebar-socials-list');
     socialsContainer.innerHTML = '';
@@ -741,31 +789,70 @@ function renderContactForm() {
 // 4. SAVE & SERIALIZATION LOGIC
 // ----------------------------------------------------
 async function saveAllFiles() {
-    if (!CMSState.dirHandle) {
-        showToast('Please select your workspace repository folder first!', 'warning');
-        return;
-    }
-
     try {
         syncFormValuesToState();
 
-        const newComponentsJs = generateComponentsJs();
-        const newIndexHtml = generateIndexHtml();
-        const newPublicationsHtml = generatePublicationsHtml();
-        const newProjectsHtml = generateProjectsHtml();
-        const newFieldworksHtml = generateFieldworksHtml();
-        const newTeachingHtml = generateTeachingHtml();
-        const newContactHtml = generateContactHtml();
+        // Write newly uploaded photo if pending
+        if (CMSState.pendingAvatarFile && CMSState.dirHandle) {
+            try {
+                const photoDir = await CMSState.dirHandle.getDirectoryHandle('photo', { create: true });
+                const imgHandle = await photoDir.getFileHandle(CMSState.pendingAvatarFile.filename, { create: true });
+                const imgWritable = await imgHandle.createWritable();
+                await imgWritable.write(CMSState.pendingAvatarFile.blob);
+                await imgWritable.close();
+                CMSState.pendingAvatarFile = null;
+            } catch (imgErr) {
+                console.error('Error saving image file:', imgErr);
+            }
+        }
 
-        await writeFileHandle('js/components.js', newComponentsJs);
-        await writeFileHandle('index.html', newIndexHtml);
-        await writeFileHandle('publications.html', newPublicationsHtml);
-        await writeFileHandle('projects.html', newProjectsHtml);
-        await writeFileHandle('fieldworks.html', newFieldworksHtml);
-        await writeFileHandle('teaching.html', newTeachingHtml);
-        await writeFileHandle('contact.html', newContactHtml);
+        const generatedFiles = {
+            'js/components.js': generateComponentsJs(),
+            'index.html': generateIndexHtml(),
+            'publications.html': generatePublicationsHtml(),
+            'projects.html': generateProjectsHtml(),
+            'fieldworks.html': generateFieldworksHtml(),
+            'teaching.html': generateTeachingHtml(),
+            'contact.html': generateContactHtml()
+        };
 
-        showToast('All static HTML & JS files successfully saved to disk!', 'success');
+        if (CMSState.dirHandle) {
+            for (const [relPath, content] of Object.entries(generatedFiles)) {
+                await writeFileHandle(relPath, content);
+            }
+            showToast('All static HTML, JS, and image files successfully saved to disk!', 'success');
+            return;
+        }
+
+        if ('showDirectoryPicker' in window) {
+            try {
+                const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+                CMSState.dirHandle = dirHandle;
+
+                // Save pending photo
+                if (CMSState.pendingAvatarFile) {
+                    const photoDir = await CMSState.dirHandle.getDirectoryHandle('photo', { create: true });
+                    const imgHandle = await photoDir.getFileHandle(CMSState.pendingAvatarFile.filename, { create: true });
+                    const imgWritable = await imgHandle.createWritable();
+                    await imgWritable.write(CMSState.pendingAvatarFile.blob);
+                    await imgWritable.close();
+                    CMSState.pendingAvatarFile = null;
+                }
+
+                for (const [relPath, content] of Object.entries(generatedFiles)) {
+                    await writeFileHandle(relPath, content);
+                }
+                showToast('Files & images successfully updated directly on disk!', 'success');
+                return;
+            } catch (err) {
+                if (err.name === 'AbortError') return;
+            }
+        }
+
+        showToast('Saving changes... Downloading updated files.', 'info');
+        for (const [relPath, content] of Object.entries(generatedFiles)) {
+            downloadFile(relPath.split('/').pop(), content);
+        }
     } catch (err) {
         console.error('Error saving files:', err);
         showToast('Save failed: ' + err.message, 'error');
@@ -793,6 +880,7 @@ function syncFormValuesToState() {
 }
 
 async function writeFileHandle(relPath, content) {
+    if (!CMSState.dirHandle) return;
     let fileHandle;
     if (relPath.includes('/')) {
         const parts = relPath.split('/');
@@ -806,11 +894,21 @@ async function writeFileHandle(relPath, content) {
     await writable.write(content);
     await writable.close();
 
-    CMSState.files[relPath] = { handle: fileHandle, content: content };
+    CMSState.files[relPath] = { content: content };
+}
+
+function downloadFile(filename, text) {
+    const element = document.createElement('a');
+    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+    element.setAttribute('download', filename);
+    element.style.display = 'none';
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
 }
 
 // ----------------------------------------------------
-// 5. HTML & JS CODE GENERATORS (Tailwind CSS v3 Format)
+// 5. HTML & JS CODE GENERATORS
 // ----------------------------------------------------
 const TAILWIND_HEAD = `    <!-- Google Fonts & FontAwesome -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
