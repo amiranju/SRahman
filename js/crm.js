@@ -1,7 +1,7 @@
 /**
  * Portfolio Content Management System (CMS) Logic
  * Auto-detects local workspace files, supports photo & hero banner uploads into photo/ folder, direct disk saving,
- * and user-friendly structured form cards for Education, Conferences, Awards, and Affiliations.
+ * and user-friendly structured form cards for Education, Conferences, Awards, Affiliations, Publications, and Projects.
  */
 
 // Application State
@@ -401,7 +401,9 @@ function parseAllFiles() {
             CMSState.data.publications.items = Array.from(pubSec.querySelectorAll('.pt-4')).map(item => {
                 const title = item.querySelector('.font-semibold')?.innerText.trim() || '';
                 const meta = item.querySelector('.text-emerald-700')?.innerText.trim() || '';
-                return { title, meta };
+                const linkAnchor = item.querySelector('a[href]');
+                const link = linkAnchor ? linkAnchor.getAttribute('href') : '';
+                return { title, meta, link };
             });
 
             const noteEl = pubSec.querySelector('p em');
@@ -431,8 +433,10 @@ function parseAllFiles() {
                         const title = item.querySelector('.font-semibold')?.innerText.trim() || '';
                         const meta = item.querySelector('.text-emerald-700')?.innerText.trim() || '';
                         const desc = item.querySelector('p')?.innerHTML.trim() || '';
-                        
-                        const projectObj = { title, meta, description: desc };
+                        const linkAnchor = item.querySelector('a[href]');
+                        const link = linkAnchor ? linkAnchor.getAttribute('href') : '';
+
+                        const projectObj = { title, meta, description: desc, link };
                         if (currentCategory === 'current') {
                             CMSState.data.projects.current.push(projectObj);
                         } else {
@@ -803,6 +807,10 @@ function renderPublicationsForm() {
                 <label class="form-label">Authors & Journal Metadata</label>
                 <input type="text" class="form-control" value="${pub.meta}" onchange="CMSState.data.publications.items[${idx}].meta = this.value">
             </div>
+            <div class="form-group">
+                <label class="form-label">Article Link / DOI URL (Optional)</label>
+                <input type="text" class="form-control" value="${pub.link || ''}" placeholder="e.g. https://doi.org/10.1016/j.ecolind.2023.100..." onchange="CMSState.data.publications.items[${idx}].link = this.value">
+            </div>
         `;
         container.appendChild(div);
     });
@@ -821,7 +829,7 @@ function movePublication(idx, dir) {
     renderPublicationsForm();
 }
 function addPublicationItem() {
-    CMSState.data.publications.items.unshift({ title: 'New Article Title', meta: 'Author, A. B. 2025. Journal Name, 12, 100.' });
+    CMSState.data.publications.items.unshift({ title: 'New Article Title', meta: 'Author, A. B. 2025. Journal Name, 12, 100.', link: '' });
     renderPublicationsForm();
     renderStats();
 }
@@ -858,6 +866,10 @@ function createProjectCard(proj, idx, cat) {
             <input type="text" class="form-control" value="${proj.meta}" onchange="CMSState.data.projects.${cat}[${idx}].meta = this.value">
         </div>
         <div class="form-group">
+            <label class="form-label">Project Link / URL (Optional)</label>
+            <input type="text" class="form-control" value="${proj.link || ''}" placeholder="e.g. https://..." onchange="CMSState.data.projects.${cat}[${idx}].link = this.value">
+        </div>
+        <div class="form-group">
             <label class="form-label">Short Description (Optional)</label>
             <textarea class="form-control" rows="2" onchange="CMSState.data.projects.${cat}[${idx}].description = this.value">${proj.description || ''}</textarea>
         </div>
@@ -871,7 +883,7 @@ function removeProject(cat, idx) {
     renderStats();
 }
 function addProjectItem(cat) {
-    CMSState.data.projects[cat].unshift({ title: 'New Project Title', meta: 'Role: Principal Investigator | Funded by: Cell', description: '' });
+    CMSState.data.projects[cat].unshift({ title: 'New Project Title', meta: 'Role: Principal Investigator | Funded by: Cell', description: '', link: '' });
     renderProjectsForm();
     renderStats();
 }
@@ -1361,9 +1373,10 @@ function generatePublicationsHtml() {
     const bannerUrl = CMSState.data.components.heroBanner || 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80';
 
     const itemsHtml = pub.items.map(p => {
+        const linkBtn = p.link ? `\n                            <a href="${p.link}" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 mt-2.5 text-xs font-semibold text-brand-green bg-emerald-50 hover:bg-brand-green hover:text-white rounded-md border border-emerald-200 transition-colors shadow-sm"><i class="fas fa-external-link-alt text-[10px]"></i> View Publication / DOI</a>` : '';
         return `                        <div class="pt-4 first:pt-0">
                             <span class="font-semibold text-gray-900 block">${p.title}</span>
-                            <span class="text-sm text-emerald-700 italic block mt-1">${p.meta}</span>
+                            <span class="text-sm text-emerald-700 italic block mt-1">${p.meta}</span>${linkBtn}
                         </div>`;
     }).join('\n');
 
@@ -1414,17 +1427,19 @@ function generateProjectsHtml() {
 
     const currHtml = proj.current.map(p => {
         const descHtml = p.description ? `\n                            <p class="text-gray-700 text-sm mt-2">${p.description}</p>` : '';
+        const linkBtn = p.link ? `\n                            <a href="${p.link}" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 mt-2.5 text-xs font-semibold text-brand-green bg-emerald-50 hover:bg-brand-green hover:text-white rounded-md border border-emerald-200 transition-colors shadow-sm"><i class="fas fa-external-link-alt text-[10px]"></i> View Project Details</a>` : '';
         return `                        <div class="pt-4 first:pt-0">
                             <span class="font-semibold text-gray-900 block text-lg">${p.title}</span>
-                            <span class="text-sm text-emerald-700 italic block mt-1">${p.meta}</span>${descHtml}
+                            <span class="text-sm text-emerald-700 italic block mt-1">${p.meta}</span>${descHtml}${linkBtn}
                         </div>`;
     }).join('\n');
 
     const pastHtml = proj.past.map(p => {
         const descHtml = p.description ? `\n                            <p class="text-gray-700 text-sm mt-2">${p.description}</p>` : '';
+        const linkBtn = p.link ? `\n                            <a href="${p.link}" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 mt-2.5 text-xs font-semibold text-brand-green bg-emerald-50 hover:bg-brand-green hover:text-white rounded-md border border-emerald-200 transition-colors shadow-sm"><i class="fas fa-external-link-alt text-[10px]"></i> View Project Details</a>` : '';
         return `                        <div class="pt-4 first:pt-0">
                             <span class="font-semibold text-gray-900 block">${p.title}</span>
-                            <span class="text-sm text-emerald-700 italic block mt-1">${p.meta}</span>${descHtml}
+                            <span class="text-sm text-emerald-700 italic block mt-1">${p.meta}</span>${descHtml}${linkBtn}
                         </div>`;
     }).join('\n');
 
