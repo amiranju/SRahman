@@ -66,7 +66,7 @@ function initSidebar() {
         <div class="bg-white rounded-xl shadow-md p-6 border border-emerald-100 text-center sticky top-24">
             <img src="photo/profile.jpg" alt="Dr. Md. Saidur Rahman" class="w-44 h-44 rounded-full border-4 border-white shadow-md mx-auto mb-5 object-cover">
             <h1 class="font-heading font-bold text-xl text-brand-green mb-2">Dr. Md. Saidur Rahman</h1>
-            <p class="text-sm text-gray-600 mb-6 leading-relaxed">Professor of Forestry and Wood Technology<br>Khulna University, Bangladesh</p>
+            <p class="text-sm text-gray-600 mb-6 leading-relaxed">Professor of Forestry and Wood Technology<br>Khulna University, Khulna, Bangladesh</p>
             
             <ul class="space-y-3 text-left border-t border-emerald-50 pt-5">
                 <li><a href="mailto:msrahman@fwt.ku.ac.bd" target="_blank" class="flex items-center text-sm text-gray-700 hover:text-brand-green transition-colors"><i class="fas fa-envelope w-6 text-brand-green"></i> msrahman@fwt.ku.ac.bd</a></li>
