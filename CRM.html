@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Local Content Management System Dashboard for Portfolio Management">
+    <title>Portfolio CMS | Local Content Dashboard</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CMS Styling -->
+    <link rel="stylesheet" href="css/crm.css">
+</head>
+<body>
+
+    <!-- Sidebar Navigation -->
+    <aside class="cms-sidebar">
+        <div class="cms-brand">
+            <div class="brand-icon">
+                <i class="fas fa-leaf"></i>
+            </div>
+            <div class="brand-title">
+                <h2>Portfolio CMS</h2>
+                <span>Local Dashboard</span>
+            </div>
+        </div>
+
+        <nav class="cms-nav">
+            <div class="nav-section-label">General</div>
+            <a href="#" class="nav-item active" data-tab="dashboard">
+                <i class="fas fa-chart-pie"></i> Dashboard Overview
+            </a>
+            <a href="#" class="nav-item" data-tab="settings">
+                <i class="fas fa-sliders"></i> Profile & Sidebar
+            </a>
+
+            <div class="nav-section-label">Page Management</div>
+            <a href="#" class="nav-item" data-tab="home">
+                <i class="fas fa-house-user"></i> Home Page (index)
+            </a>
+            <a href="#" class="nav-item" data-tab="publications">
+                <i class="fas fa-book-bookmark"></i> Publications
+            </a>
+            <a href="#" class="nav-item" data-tab="projects">
+                <i class="fas fa-briefcase"></i> Research Projects
+            </a>
+            <a href="#" class="nav-item" data-tab="fieldworks">
+                <i class="fas fa-compass-drafting"></i> Field Works
+            </a>
+            <a href="#" class="nav-item" data-tab="teaching">
+                <i class="fas fa-graduation-cap"></i> Teaching
+            </a>
+            <a href="#" class="nav-item" data-tab="contact">
+                <i class="fas fa-address-book"></i> Contact Info
+            </a>
+        </nav>
+
+        <div class="cms-sidebar-footer">
+            <div class="workspace-status-card">
+                <div class="status-indicator">
+                    <div id="status-dot" class="dot"></div>
+                    <span id="status-text">Not Connected</span>
+                </div>
+                <button id="btn-select-dir" class="btn btn-secondary btn-sm" style="width:100%;">
+                    <i class="fas fa-folder-open"></i> Select Repo Folder
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Layout -->
+    <main class="cms-main-content">
+        <!-- Top Navigation Bar -->
+        <header class="cms-topbar">
+            <div class="page-header">
+                <h1 id="page-title-text">Dashboard Overview</h1>
+            </div>
+
+            <div class="topbar-actions">
+                <button id="btn-preview" class="btn btn-secondary">
+                    <i class="fas fa-eye"></i> Live Preview
+                </button>
+                <button id="btn-save-all" class="btn btn-primary">
+                    <i class="fas fa-floppy-disk"></i> Save All Changes
+                </button>
+            </div>
+        </header>
+
+        <!-- CMS Application Body -->
+        <div class="cms-body">
+            
+            <!-- TAB: Dashboard Overview -->
+            <div id="tab-dashboard" class="tab-pane active">
+                <div class="card-panel" style="background: linear-gradient(135deg, #e8f5e9, #f1f8e9); border-color: var(--border-color);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px;">
+                        <div>
+                            <h2 style="font-size:1.4rem; color:var(--primary-green); margin-bottom:6px;">
+                                <i class="fas fa-rocket"></i> Welcome to your Local Content Management System
+                            </h2>
+                            <p style="color:var(--text-secondary); max-width:700px;">
+                                Easily manage your static website content locally in your browser. Click <strong>"Select Repo Folder"</strong> to grant direct disk access, modify any page sections, and click <strong>"Save All Changes"</strong> to update your static HTML files.
+                            </p>
+                        </div>
+                        <button id="btn-select-dir-hero" class="btn btn-primary">
+                            <i class="fas fa-folder-tree"></i> Connect Workspace Folder
+                        </button>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-book"></i></div>
+                        <div class="stat-info">
+                            <h3>Total Publications</h3>
+                            <div id="stat-publications" class="stat-number">0</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="color:var(--accent); background-color:var(--accent-light);"><i class="fas fa-diagram-project"></i></div>
+                        <div class="stat-info">
+                            <h3>Research Projects</h3>
+                            <div id="stat-projects" class="stat-number">0</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="color:#7b1fa2; background-color:#f3e5f5;"><i class="fas fa-award"></i></div>
+                        <div class="stat-info">
+                            <h3>Academic Degrees</h3>
+                            <div id="stat-education" class="stat-number">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-panel">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-workflow"></i> How to use this Portfolio CMS</h2>
+                    </div>
+                    <ol style="margin-left: 20px; line-height: 1.8; color: var(--text-secondary);">
+                        <li><strong>Step 1:</strong> Pull or clone your repository onto your local PC.</li>
+                        <li><strong>Step 2:</strong> Open <code>CRM.html</code> in Chrome, Edge, Brave, or Safari.</li>
+                        <li><strong>Step 3:</strong> Click <mark style="background:var(--primary-light); color:var(--primary-green); padding:2px 8px; border-radius:4px; font-weight:600;">Select Repo Folder</mark> in the sidebar or top right and choose your repository directory.</li>
+                        <li><strong>Step 4:</strong> Edit any page (About, Publications, Projects, Education, etc.) using the sidebar options.</li>
+                        <li><strong>Step 5:</strong> Click <mark style="background:var(--primary-light); color:var(--primary-green); padding:2px 8px; border-radius:4px; font-weight:600;">Save All Changes</mark> to write the updated <code>.html</code> files directly to your hard drive.</li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- TAB: Profile & Sidebar Settings -->
+            <div id="tab-settings" class="tab-pane">
+                <div class="card-panel">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-user-gear"></i> Profile Information & Sidebar Header</h2>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Full Name & Title</label>
+                        <input type="text" id="sidebar-name" class="form-control" placeholder="Dr. Md. Saidur Rahman">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Role & Designation (Line breaks allowed)</label>
+                        <textarea id="sidebar-role" class="form-control" rows="2" placeholder="Professor of Forestry and Wood Technology&#10;Khulna University, Bangladesh"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Profile Image Path</label>
+                        <input type="text" id="sidebar-avatar" class="form-control" placeholder="photo/profile.jpg">
+                    </div>
+                </div>
+
+                <div class="card-panel">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-share-nodes"></i> Social & Academic Profiles</h2>
+                        <button class="btn btn-secondary btn-sm" onclick="addSocialLink()"><i class="fas fa-plus"></i> Add Link</button>
+                    </div>
+                    <div id="sidebar-socials-list"></div>
+                </div>
+            </div>
+
+            <!-- TAB: Home Page -->
+            <div id="tab-home" class="tab-pane">
+                <div class="card-panel">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-user-astronaut"></i> About Myself Paragraphs</h2>
+                        <button class="btn btn-secondary btn-sm" onclick="addAboutPara()"><i class="fas fa-plus"></i> Add Paragraph</button>
+                    </div>
+                    <div id="home-about-list"></div>
+                </div>
+
+                <div class="card-panel">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-lightbulb"></i> Key Areas of Expertise</h2>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">List items (One area per line)</label>
+                        <textarea id="home-key-areas" class="form-control" rows="6"></textarea>
+                    </div>
+                </div>
+
+                <div class="card-panel">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-graduation-cap"></i> Education Timeline</h2>
+                        <button class="btn btn-secondary btn-sm" onclick="addEducationItem()"><i class="fas fa-plus"></i> Add Degree</button>
+                    </div>
+                    <div id="home-education-list"></div>
+                </div>
+
+                <div class="card-panel">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-people-group"></i> Conferences</h2>
+                        <button class="btn btn-secondary btn-sm" onclick="addConferenceItem()"><i class="fas fa-plus"></i> Add Conference</button>
+                    </div>
+                    <div id="home-conferences-list"></div>
+                </div>
+
+                <div class="card-panel">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-trophy"></i> Awards, Scholarships and Prizes</h2>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Awards list (HTML formatted or plain text, one per line)</label>
+                        <textarea id="home-awards" class="form-control" rows="5"></textarea>
+                    </div>
+                </div>
+
+                <div class="card-panel">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-building-columns"></i> Professional Affiliations</h2>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Affiliations list (One per line)</label>
+                        <textarea id="home-affiliations" class="form-control" rows="5"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: Publications -->
+            <div id="tab-publications" class="tab-pane">
+                <div class="card-panel">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-book"></i> Journal Articles & Publications</h2>
+                        <button class="btn btn-primary btn-sm" onclick="addPublicationItem()"><i class="fas fa-plus"></i> Add New Publication</button>
+                    </div>
+                    <div id="publications-list"></div>
+                    <div class="form-group" style="margin-top:20px;">
+                        <label class="form-label">Selected List Disclaimer Note</label>
+                        <input type="text" id="publications-note" class="form-control">
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: Projects -->
+            <div id="tab-projects" class="tab-pane">
+                <div class="card-panel">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-spinner"></i> Current Research Projects</h2>
+                        <button class="btn btn-secondary btn-sm" onclick="addProjectItem('current')"><i class="fas fa-plus"></i> Add Current Project</button>
+                    </div>
+                    <div id="projects-current-list"></div>
+                </div>
+
+                <div class="card-panel">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-clock-rotate-left"></i> Past Research Projects</h2>
+                        <button class="btn btn-secondary btn-sm" onclick="addProjectItem('past')"><i class="fas fa-plus"></i> Add Past Project</button>
+                    </div>
+                    <div id="projects-past-list"></div>
+                </div>
+            </div>
+
+            <!-- TAB: Field Works -->
+            <div id="tab-fieldworks" class="tab-pane">
+                <div class="card-panel">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-mountain-sun"></i> Field Works Page Content</h2>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Section Heading</label>
+                        <input type="text" id="fieldworks-heading" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Description Text</label>
+                        <textarea id="fieldworks-desc" class="form-control" rows="4"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: Teaching -->
+            <div id="tab-teaching" class="tab-pane">
+                <div class="card-panel">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-chalkboard-user"></i> Teaching Experiences</h2>
+                        <button class="btn btn-secondary btn-sm" onclick="addTeachingExp()"><i class="fas fa-plus"></i> Add Teaching Position</button>
+                    </div>
+                    <div id="teaching-experiences-list"></div>
+                </div>
+
+                <div class="card-panel">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-certificate"></i> Trainings Conducted</h2>
+                        <button class="btn btn-secondary btn-sm" onclick="addTeachingTraining()"><i class="fas fa-plus"></i> Add Training</button>
+                    </div>
+                    <div id="teaching-trainings-list"></div>
+                </div>
+            </div>
+
+            <!-- TAB: Contact -->
+            <div id="tab-contact" class="tab-pane">
+                <div class="card-panel">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-envelope-open-text"></i> Contact Information Page</h2>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Introductory Paragraph</label>
+                        <textarea id="contact-intro" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Primary Email Address</label>
+                        <input type="email" id="contact-email" class="form-control">
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Live Split Preview Modal -->
+    <div id="modal-preview" class="modal-overlay preview-modal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3><i class="fas fa-desktop" style="color:var(--primary-green);"></i> Live Site Preview</h3>
+                <button id="btn-close-preview" class="modal-close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" style="padding:10px;">
+                <iframe id="preview-iframe" class="preview-iframe" title="Live Preview"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- CMS JS Engine -->
+    <script src="js/crm.js"></script>
+</body>
+</html>
