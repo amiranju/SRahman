@@ -1,6 +1,7 @@
 /**
  * Portfolio Content Management System (CMS) Logic
- * Auto-detects local workspace files, supports photo uploading into photo/ folder, and direct disk saving.
+ * Auto-detects local workspace files, supports photo & hero banner uploads into photo/ folder, direct disk saving,
+ * and user-friendly structured form cards for Education, Conferences, Awards, and Affiliations.
  */
 
 // Application State
@@ -8,6 +9,7 @@ const CMSState = {
     dirHandle: null,
     files: {}, // filename -> content string
     pendingAvatarFile: null, // { filename, relPath, blob }
+    pendingBannerFile: null, // { filename, relPath, blob }
     modified: new Set(),
     data: {
         components: {
@@ -15,6 +17,7 @@ const CMSState = {
             role: '',
             institution: '',
             avatar: '',
+            heroBanner: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80',
             socials: []
         },
         index: {
@@ -118,6 +121,65 @@ function handleAvatarFileSelect(event) {
     };
 
     showToast(`Selected new photo: ${relPath}. Click "Save All Changes" to save to disk!`, 'success');
+}
+
+// Handle Hero Banner Background File Selection
+function handleBannerFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const relPath = `photo/${file.name}`;
+
+    // Immediate preview update
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+        document.getElementById('banner-preview-img').src = evt.target.result;
+    };
+    reader.readAsDataURL(file);
+
+    document.getElementById('site-hero-banner').value = relPath;
+    CMSState.data.components.heroBanner = relPath;
+    CMSState.pendingBannerFile = {
+        filename: file.name,
+        relPath: relPath,
+        blob: file
+    };
+
+    showToast(`Selected new hero banner: ${relPath}. Click "Save All Changes" to save to disk!`, 'success');
+}
+
+function updateBannerPreviewFromUrl(url) {
+    if (!url) return;
+    document.getElementById('banner-preview-img').src = url;
+    CMSState.data.components.heroBanner = url;
+}
+
+// Helper to intelligently parse HTML <li> award tags into { title, details }
+function parseAwardItem(htmlString) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(`<div>${htmlString}</div>`, 'text/html');
+    const div = doc.querySelector('div');
+    const strong = div.querySelector('strong, b');
+
+    if (strong) {
+        const titleText = strong.innerText.replace(/:\s*$/, '').trim();
+        strong.remove();
+        let remaining = div.innerText.trim();
+        if (remaining.startsWith(':')) {
+            remaining = remaining.substring(1).trim();
+        }
+        return { title: titleText, details: remaining };
+    } else {
+        const text = div.innerText.trim();
+        const colonIdx = text.indexOf(':');
+        if (colonIdx !== -1) {
+            return {
+                title: text.substring(0, colonIdx).trim(),
+                details: text.substring(colonIdx + 1).trim()
+            };
+        }
+        return { title: text, details: '' };
+    }
 }
 
 // ----------------------------------------------------
@@ -277,6 +339,16 @@ function parseAllFiles() {
     if (CMSState.files['index.html']) {
         const doc = parser.parseFromString(CMSState.files['index.html'].content, 'text/html');
 
+        // Extract Banner Photo URL
+        const bgDiv = doc.querySelector('div[style*="background-image"]');
+        if (bgDiv) {
+            const bgStyle = bgDiv.getAttribute('style') || '';
+            const urlMatch = bgStyle.match(/url\(\s*['"]?([^'"]+)['"]?\s*\)/);
+            if (urlMatch && urlMatch[1]) {
+                CMSState.data.components.heroBanner = urlMatch[1];
+            }
+        }
+
         const aboutSec = doc.getElementById('about');
         if (aboutSec) {
             CMSState.data.index.about = Array.from(aboutSec.querySelectorAll('p')).map(p => p.innerHTML.trim());
@@ -310,12 +382,14 @@ function parseAllFiles() {
 
         const awardsSec = doc.getElementById('awards');
         if (awardsSec) {
-            CMSState.data.index.awards = Array.from(awardsSec.querySelectorAll('li')).map(li => li.innerHTML.trim());
+            CMSState.data.index.awards = Array.from(awardsSec.querySelectorAll('li')).map(li => {
+                return parseAwardItem(li.innerHTML.trim());
+            });
         }
 
         const affSec = doc.getElementById('affiliations');
         if (affSec) {
-            CMSState.data.index.affiliations = Array.from(affSec.querySelectorAll('li')).map(li => li.innerHTML.trim());
+            CMSState.data.index.affiliations = Array.from(affSec.querySelectorAll('li')).map(li => li.innerText.trim());
         }
     }
 
@@ -464,6 +538,11 @@ function renderSidebarForm() {
         imgPreview.src = c.avatar || 'photo/profile.jpg';
     }
 
+    const bannerInput = document.getElementById('site-hero-banner');
+    const bannerPreview = document.getElementById('banner-preview-img');
+    if (bannerInput) bannerInput.value = c.heroBanner || '';
+    if (bannerPreview) bannerPreview.src = c.heroBanner || 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80';
+
     const socialsContainer = document.getElementById('sidebar-socials-list');
     socialsContainer.innerHTML = '';
 
@@ -512,6 +591,7 @@ function addSocialLink() {
 
 // Render Home Form
 function renderHomeForm() {
+    // 1. About Myself Paragraphs
     const aboutList = document.getElementById('home-about-list');
     aboutList.innerHTML = '';
     CMSState.data.index.about.forEach((para, idx) => {
@@ -527,9 +607,11 @@ function renderHomeForm() {
         aboutList.appendChild(div);
     });
 
+    // 2. Key Areas of Expertise
     const keyContainer = document.getElementById('home-key-areas');
     keyContainer.value = CMSState.data.index.keyAreas.join('\n');
 
+    // 3. Education Timeline
     const eduList = document.getElementById('home-education-list');
     eduList.innerHTML = '';
     CMSState.data.index.education.forEach((edu, idx) => {
@@ -556,6 +638,7 @@ function renderHomeForm() {
         eduList.appendChild(div);
     });
 
+    // 4. Conferences
     const confList = document.getElementById('home-conferences-list');
     confList.innerHTML = '';
     CMSState.data.index.conferences.forEach((conf, idx) => {
@@ -578,8 +661,58 @@ function renderHomeForm() {
         confList.appendChild(div);
     });
 
-    document.getElementById('home-awards').value = CMSState.data.index.awards.join('\n');
-    document.getElementById('home-affiliations').value = CMSState.data.index.affiliations.join('\n');
+    // 5. Awards, Scholarships & Prizes (Structured 2-Field Cards)
+    const awardsList = document.getElementById('home-awards-list');
+    awardsList.innerHTML = '';
+    CMSState.data.index.awards.forEach((award, idx) => {
+        const titleVal = typeof award === 'object' ? (award.title || '') : award;
+        const detailsVal = typeof award === 'object' ? (award.details || '') : '';
+
+        const div = document.createElement('div');
+        div.className = 'item-card';
+        div.innerHTML = `
+            <div class="item-card-header">
+                <span class="item-card-title">${titleVal || 'Award #' + (idx + 1)}</span>
+                <div class="item-actions">
+                    <button class="btn btn-sm btn-secondary btn-icon-only" onclick="moveAward(${idx}, -1)"><i class="fas fa-arrow-up"></i></button>
+                    <button class="btn btn-sm btn-secondary btn-icon-only" onclick="moveAward(${idx}, 1)"><i class="fas fa-arrow-down"></i></button>
+                    <button class="btn btn-sm btn-danger btn-icon-only" onclick="removeAward(${idx})"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Award Name & Year</label>
+                <input type="text" class="form-control" value="${titleVal}" placeholder="e.g. Vice-Chancellor's Award 2020" onchange="updateAwardItem(${idx}, 'title', this.value)">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Award Description / Details</label>
+                <textarea class="form-control" rows="2" placeholder="e.g. Awarded for outstanding research..." onchange="updateAwardItem(${idx}, 'details', this.value)">${detailsVal}</textarea>
+            </div>
+        `;
+        awardsList.appendChild(div);
+    });
+
+    // 6. Professional Affiliations (Interactive Cards)
+    const affList = document.getElementById('home-affiliations-list');
+    affList.innerHTML = '';
+    CMSState.data.index.affiliations.forEach((aff, idx) => {
+        const div = document.createElement('div');
+        div.className = 'item-card';
+        div.innerHTML = `
+            <div class="item-card-header">
+                <span class="item-card-title">Affiliation #${idx + 1}</span>
+                <div class="item-actions">
+                    <button class="btn btn-sm btn-secondary btn-icon-only" onclick="moveAffiliation(${idx}, -1)"><i class="fas fa-arrow-up"></i></button>
+                    <button class="btn btn-sm btn-secondary btn-icon-only" onclick="moveAffiliation(${idx}, 1)"><i class="fas fa-arrow-down"></i></button>
+                    <button class="btn btn-sm btn-danger btn-icon-only" onclick="removeAffiliation(${idx})"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Organization / Society Title</label>
+                <input type="text" class="form-control" value="${aff}" onchange="CMSState.data.index.affiliations[${idx}] = this.value">
+            </div>
+        `;
+        affList.appendChild(div);
+    });
 }
 
 function updateAboutPara(idx, val) { CMSState.data.index.about[idx] = val; }
@@ -598,6 +731,50 @@ function addEducationItem() {
 function removeConference(idx) { CMSState.data.index.conferences.splice(idx, 1); renderHomeForm(); }
 function addConferenceItem() {
     CMSState.data.index.conferences.push({ title: 'Conference Name', description: 'Presentation details...' });
+    renderHomeForm();
+}
+
+// Interactive Awards Management Helpers
+function updateAwardItem(idx, field, value) {
+    if (typeof CMSState.data.index.awards[idx] !== 'object') {
+        CMSState.data.index.awards[idx] = { title: CMSState.data.index.awards[idx] || '', details: '' };
+    }
+    CMSState.data.index.awards[idx][field] = value;
+}
+function removeAward(idx) {
+    CMSState.data.index.awards.splice(idx, 1);
+    renderHomeForm();
+}
+function moveAward(idx, dir) {
+    const arr = CMSState.data.index.awards;
+    const targetIdx = idx + dir;
+    if (targetIdx < 0 || targetIdx >= arr.length) return;
+    const temp = arr[idx];
+    arr[idx] = arr[targetIdx];
+    arr[targetIdx] = temp;
+    renderHomeForm();
+}
+function addAwardItem() {
+    CMSState.data.index.awards.push({ title: 'New Award Name (Year)', details: 'Description of the award...' });
+    renderHomeForm();
+}
+
+// Interactive Affiliations Management Helpers
+function removeAffiliation(idx) {
+    CMSState.data.index.affiliations.splice(idx, 1);
+    renderHomeForm();
+}
+function moveAffiliation(idx, dir) {
+    const arr = CMSState.data.index.affiliations;
+    const targetIdx = idx + dir;
+    if (targetIdx < 0 || targetIdx >= arr.length) return;
+    const temp = arr[idx];
+    arr[idx] = arr[targetIdx];
+    arr[targetIdx] = temp;
+    renderHomeForm();
+}
+function addAffiliationItem() {
+    CMSState.data.index.affiliations.push('Member, Professional Organization / Society');
     renderHomeForm();
 }
 
@@ -792,7 +969,7 @@ async function saveAllFiles() {
     try {
         syncFormValuesToState();
 
-        // Write newly uploaded photo if pending
+        // Save newly uploaded avatar photo if pending
         if (CMSState.pendingAvatarFile && CMSState.dirHandle) {
             try {
                 const photoDir = await CMSState.dirHandle.getDirectoryHandle('photo', { create: true });
@@ -802,7 +979,21 @@ async function saveAllFiles() {
                 await imgWritable.close();
                 CMSState.pendingAvatarFile = null;
             } catch (imgErr) {
-                console.error('Error saving image file:', imgErr);
+                console.error('Error saving profile image file:', imgErr);
+            }
+        }
+
+        // Save newly uploaded hero banner photo if pending
+        if (CMSState.pendingBannerFile && CMSState.dirHandle) {
+            try {
+                const photoDir = await CMSState.dirHandle.getDirectoryHandle('photo', { create: true });
+                const bannerHandle = await photoDir.getFileHandle(CMSState.pendingBannerFile.filename, { create: true });
+                const bannerWritable = await bannerHandle.createWritable();
+                await bannerWritable.write(CMSState.pendingBannerFile.blob);
+                await bannerWritable.close();
+                CMSState.pendingBannerFile = null;
+            } catch (bannerErr) {
+                console.error('Error saving hero banner image file:', bannerErr);
             }
         }
 
@@ -829,14 +1020,22 @@ async function saveAllFiles() {
                 const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
                 CMSState.dirHandle = dirHandle;
 
-                // Save pending photo
+                const photoDir = await CMSState.dirHandle.getDirectoryHandle('photo', { create: true });
+
                 if (CMSState.pendingAvatarFile) {
-                    const photoDir = await CMSState.dirHandle.getDirectoryHandle('photo', { create: true });
                     const imgHandle = await photoDir.getFileHandle(CMSState.pendingAvatarFile.filename, { create: true });
                     const imgWritable = await imgHandle.createWritable();
                     await imgWritable.write(CMSState.pendingAvatarFile.blob);
                     await imgWritable.close();
                     CMSState.pendingAvatarFile = null;
+                }
+
+                if (CMSState.pendingBannerFile) {
+                    const bannerHandle = await photoDir.getFileHandle(CMSState.pendingBannerFile.filename, { create: true });
+                    const bannerWritable = await bannerHandle.createWritable();
+                    await bannerWritable.write(CMSState.pendingBannerFile.blob);
+                    await bannerWritable.close();
+                    CMSState.pendingBannerFile = null;
                 }
 
                 for (const [relPath, content] of Object.entries(generatedFiles)) {
@@ -863,12 +1062,10 @@ function syncFormValuesToState() {
     CMSState.data.components.name = document.getElementById('sidebar-name').value;
     CMSState.data.components.role = document.getElementById('sidebar-role').value;
     CMSState.data.components.avatar = document.getElementById('sidebar-avatar').value;
+    CMSState.data.components.heroBanner = document.getElementById('site-hero-banner').value || 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80';
 
     const keyText = document.getElementById('home-key-areas').value;
     CMSState.data.index.keyAreas = keyText.split('\n').filter(k => k.trim() !== '');
-
-    CMSState.data.index.awards = document.getElementById('home-awards').value.split('\n').filter(a => a.trim() !== '');
-    CMSState.data.index.affiliations = document.getElementById('home-affiliations').value.split('\n').filter(a => a.trim() !== '');
 
     CMSState.data.publications.note = document.getElementById('publications-note').value;
 
@@ -1040,6 +1237,7 @@ function initFooter() {
 
 function generateIndexHtml() {
     const idx = CMSState.data.index;
+    const bannerUrl = CMSState.data.components.heroBanner || 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80';
 
     const aboutParas = idx.about.map(p => `                        <p>${p}</p>`).join('\n');
     const keyList = idx.keyAreas.map(k => `                        <li class="flex items-center text-gray-700 bg-emerald-50/60 p-3 rounded-lg border border-emerald-100"><i class="fas fa-check-circle text-brand-green mr-3"></i> ${k}</li>`).join('\n');
@@ -1063,7 +1261,20 @@ ${pContent}
                         </div>`;
     }).join('\n');
 
-    const awardsHtml = idx.awards.map(a => `                        <li class="text-gray-700 bg-emerald-50/40 p-3 rounded-lg border border-emerald-100">${a}</li>`).join('\n');
+    const awardsHtml = idx.awards.map(a => {
+        const titleText = typeof a === 'object' ? (a.title || '').trim() : a.trim();
+        const detailsText = typeof a === 'object' ? (a.details || '').trim() : '';
+
+        if (titleText && detailsText) {
+            return `                        <li class="text-gray-700 bg-emerald-50/40 p-3 rounded-lg border border-emerald-100"><strong>${titleText}:</strong> ${detailsText}</li>`;
+        } else if (titleText) {
+            return `                        <li class="text-gray-700 bg-emerald-50/40 p-3 rounded-lg border border-emerald-100"><strong>${titleText}</strong></li>`;
+        } else if (detailsText) {
+            return `                        <li class="text-gray-700 bg-emerald-50/40 p-3 rounded-lg border border-emerald-100">${detailsText}</li>`;
+        }
+        return '';
+    }).filter(l => l !== '').join('\n');
+
     const affHtml = idx.affiliations.map(af => `                        <li class="text-gray-700">${af}</li>`).join('\n');
 
     return `<!DOCTYPE html>
@@ -1084,7 +1295,7 @@ ${TAILWIND_HEAD}
 <body class="bg-brand-bg font-body text-gray-900 pt-16 min-h-screen flex flex-col justify-between">
     <div id="header-placeholder"></div>
 
-    <div class="h-56 bg-cover bg-center relative shadow-inner" style="background-image: linear-gradient(rgba(46, 125, 50, 0.35), rgba(46, 125, 50, 0.35)), url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');">
+    <div class="h-56 bg-cover bg-center relative shadow-inner" style="background-image: linear-gradient(rgba(46, 125, 50, 0.35), rgba(46, 125, 50, 0.35)), url('${bannerUrl}');">
         <div class="max-w-6xl mx-auto px-4 sm:px-6"></div>
     </div>
 
@@ -1147,6 +1358,7 @@ ${affHtml}
 
 function generatePublicationsHtml() {
     const pub = CMSState.data.publications;
+    const bannerUrl = CMSState.data.components.heroBanner || 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80';
 
     const itemsHtml = pub.items.map(p => {
         return `                        <div class="pt-4 first:pt-0">
@@ -1169,7 +1381,7 @@ ${TAILWIND_HEAD}
 <body class="bg-brand-bg font-body text-gray-900 pt-16 min-h-screen flex flex-col justify-between">
     <div id="header-placeholder"></div>
 
-    <div class="h-44 bg-cover bg-center relative shadow-inner" style="background-image: linear-gradient(rgba(46, 125, 50, 0.35), rgba(46, 125, 50, 0.35)), url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');"></div>
+    <div class="h-44 bg-cover bg-center relative shadow-inner" style="background-image: linear-gradient(rgba(46, 125, 50, 0.35), rgba(46, 125, 50, 0.35)), url('${bannerUrl}');"></div>
 
     <main class="max-w-6xl mx-auto px-4 sm:px-6 w-full -mt-16 relative z-10 mb-12">
         <div class="grid grid-cols-1 md:grid-cols-12 gap-8">
@@ -1198,6 +1410,7 @@ ${itemsHtml}
 
 function generateProjectsHtml() {
     const proj = CMSState.data.projects;
+    const bannerUrl = CMSState.data.components.heroBanner || 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80';
 
     const currHtml = proj.current.map(p => {
         const descHtml = p.description ? `\n                            <p class="text-gray-700 text-sm mt-2">${p.description}</p>` : '';
@@ -1229,7 +1442,7 @@ ${TAILWIND_HEAD}
 <body class="bg-brand-bg font-body text-gray-900 pt-16 min-h-screen flex flex-col justify-between">
     <div id="header-placeholder"></div>
 
-    <div class="h-44 bg-cover bg-center relative shadow-inner" style="background-image: linear-gradient(rgba(46, 125, 50, 0.35), rgba(46, 125, 50, 0.35)), url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');"></div>
+    <div class="h-44 bg-cover bg-center relative shadow-inner" style="background-image: linear-gradient(rgba(46, 125, 50, 0.35), rgba(46, 125, 50, 0.35)), url('${bannerUrl}');"></div>
 
     <main class="max-w-6xl mx-auto px-4 sm:px-6 w-full -mt-16 relative z-10 mb-12">
         <div class="grid grid-cols-1 md:grid-cols-12 gap-8">
@@ -1262,6 +1475,8 @@ ${pastHtml}
 
 function generateFieldworksHtml() {
     const fw = CMSState.data.fieldworks;
+    const bannerUrl = CMSState.data.components.heroBanner || 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80';
+
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1276,7 +1491,7 @@ ${TAILWIND_HEAD}
 <body class="bg-brand-bg font-body text-gray-900 pt-16 min-h-screen flex flex-col justify-between">
     <div id="header-placeholder"></div>
 
-    <div class="h-44 bg-cover bg-center relative shadow-inner" style="background-image: linear-gradient(rgba(46, 125, 50, 0.35), rgba(46, 125, 50, 0.35)), url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');"></div>
+    <div class="h-44 bg-cover bg-center relative shadow-inner" style="background-image: linear-gradient(rgba(46, 125, 50, 0.35), rgba(46, 125, 50, 0.35)), url('${bannerUrl}');"></div>
 
     <main class="max-w-6xl mx-auto px-4 sm:px-6 w-full -mt-16 relative z-10 mb-12">
         <div class="grid grid-cols-1 md:grid-cols-12 gap-8">
@@ -1304,6 +1519,7 @@ ${TAILWIND_HEAD}
 
 function generateTeachingHtml() {
     const t = CMSState.data.teaching;
+    const bannerUrl = CMSState.data.components.heroBanner || 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80';
 
     const expHtml = t.experiences.map(e => {
         let listItems = '';
@@ -1340,7 +1556,7 @@ ${TAILWIND_HEAD}
 <body class="bg-brand-bg font-body text-gray-900 pt-16 min-h-screen flex flex-col justify-between">
     <div id="header-placeholder"></div>
 
-    <div class="h-44 bg-cover bg-center relative shadow-inner" style="background-image: linear-gradient(rgba(46, 125, 50, 0.35), rgba(46, 125, 50, 0.35)), url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');"></div>
+    <div class="h-44 bg-cover bg-center relative shadow-inner" style="background-image: linear-gradient(rgba(46, 125, 50, 0.35), rgba(46, 125, 50, 0.35)), url('${bannerUrl}');"></div>
 
     <main class="max-w-6xl mx-auto px-4 sm:px-6 w-full -mt-16 relative z-10 mb-12">
         <div class="grid grid-cols-1 md:grid-cols-12 gap-8">
@@ -1372,6 +1588,7 @@ ${trainHtml}
 
 function generateContactHtml() {
     const c = CMSState.data.contact;
+    const bannerUrl = CMSState.data.components.heroBanner || 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80';
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -1387,7 +1604,7 @@ ${TAILWIND_HEAD}
 <body class="bg-brand-bg font-body text-gray-900 pt-16 min-h-screen flex flex-col justify-between">
     <div id="header-placeholder"></div>
 
-    <div class="h-44 bg-cover bg-center relative shadow-inner" style="background-image: linear-gradient(rgba(46, 125, 50, 0.35), rgba(46, 125, 50, 0.35)), url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');"></div>
+    <div class="h-44 bg-cover bg-center relative shadow-inner" style="background-image: linear-gradient(rgba(46, 125, 50, 0.35), rgba(46, 125, 50, 0.35)), url('${bannerUrl}');"></div>
 
     <main class="max-w-6xl mx-auto px-4 sm:px-6 w-full -mt-16 relative z-10 mb-12">
         <div class="grid grid-cols-1 md:grid-cols-12 gap-8">

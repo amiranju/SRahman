@@ -51,7 +51,7 @@
                 <i class="fas fa-chart-pie"></i> Dashboard Overview
             </a>
             <a href="#" class="nav-item" data-tab="settings">
-                <i class="fas fa-sliders"></i> Profile & Sidebar
+                <i class="fas fa-sliders"></i> Profile & Hero Banner
             </a>
 
             <div class="nav-section-label">Page Management</div>
@@ -168,7 +168,7 @@
                     </div>
                     <ol style="margin-left: 20px; line-height: 1.8; color: var(--text-secondary);">
                         <li><strong>Step 1:</strong> Double-click <code>CRM.html</code> on your computer to open the dashboard. Your workspace files are loaded automatically!</li>
-                        <li><strong>Step 2:</strong> Edit any section (About, Publications, Projects, Education, etc.) using the left navigation menu.</li>
+                        <li><strong>Step 2:</strong> Edit any section (About, Publications, Projects, Education, Profile & Hero Banner, etc.) using the left navigation menu.</li>
                         <li><strong>Step 3:</strong> Click <mark style="background:var(--primary-light); color:var(--primary-green); padding:2px 8px; border-radius:4px; font-weight:600;">Save All Changes</mark> in the top right header to update your static files.</li>
                         <li><strong>Step 4:</strong> Commit and push your local repo to GitHub to publish your updates live!</li>
                     </ol>
@@ -191,23 +191,56 @@
                     </div>
 
                     <!-- Profile Photo Selection & Management -->
-                    <div class="form-group" style="background:var(--primary-light); padding:16px; border-radius:10px; border:1px solid var(--border-color);">
-                        <label class="form-label" style="color:var(--primary-green); font-size:0.95rem;">Profile Picture Management</label>
+                    <div class="form-group" style="background:var(--primary-light); padding:16px; border-radius:10px; border:1px solid var(--border-color); margin-top:20px;">
+                        <label class="form-label" style="color:var(--primary-green); font-size:0.95rem; font-weight:700;">
+                            <i class="fas fa-user-circle"></i> Profile Picture Management
+                        </label>
                         <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap; margin-top:10px;">
                             <img id="avatar-preview-img" src="photo/profile.jpg" alt="Profile Thumbnail" style="width:90px; height:90px; border-radius:50%; object-fit:cover; border:3px solid #fff; box-shadow:var(--shadow-md);">
                             <div style="flex-grow:1;">
                                 <input type="file" id="avatar-file-input" accept="image/*" style="display:none;" onchange="handleAvatarFileSelect(event)">
                                 <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('avatar-file-input').click()">
-                                    <i class="fas fa-camera"></i> Select New Image from Computer
+                                    <i class="fas fa-camera"></i> Select New Profile Photo from Computer
                                 </button>
                                 <p style="font-size:0.8rem; color:var(--text-muted); margin-top:6px;">
-                                    Selecting a new image will automatically copy the photo file to the <code>photo/</code> directory upon saving.
+                                    Selecting a new profile image copies the photo file into the <code>photo/</code> directory upon saving.
                                 </p>
                             </div>
                         </div>
                         <div style="margin-top:12px;">
-                            <label class="form-label">Saved Image Path in Code</label>
+                            <label class="form-label">Saved Profile Image Path</label>
                             <input type="text" id="sidebar-avatar" class="form-control" placeholder="photo/profile.jpg">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hero Banner Background Photo Card -->
+                <div class="card-panel">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-image"></i> Hero Banner Background Photo</h2>
+                    </div>
+                    <div style="background:var(--primary-light); padding:16px; border-radius:10px; border:1px solid var(--border-color);">
+                        <label class="form-label" style="color:var(--primary-green); font-size:0.95rem; font-weight:700; margin-bottom:8px; display:block;">
+                            Current Page Banner Preview
+                        </label>
+                        <div style="position:relative; overflow:hidden; border-radius:8px; margin-bottom:12px; border:2px solid #fff; box-shadow:var(--shadow-md);">
+                            <img id="banner-preview-img" src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" alt="Banner Background Preview" style="width:100%; height:130px; object-fit:cover; display:block;">
+                            <div style="position:absolute; inset:0; background:linear-gradient(rgba(46, 125, 50, 0.35), rgba(46, 125, 50, 0.35)); pointer-events:none;"></div>
+                        </div>
+                        
+                        <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:12px;">
+                            <input type="file" id="banner-file-input" accept="image/*" style="display:none;" onchange="handleBannerFileSelect(event)">
+                            <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('banner-file-input').click()">
+                                <i class="fas fa-upload"></i> Upload New Banner Photo from Computer
+                            </button>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label class="form-label">Banner Image File Path or URL</label>
+                            <input type="text" id="site-hero-banner" class="form-control" placeholder="photo/banner.jpg or URL" onchange="updateBannerPreviewFromUrl(this.value)">
+                            <p style="font-size:0.8rem; color:var(--text-muted); margin-top:6px;">
+                                You can select an image file from your PC (saved automatically into <code>photo/</code>) or paste an image URL.
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -260,21 +293,17 @@
                 <div class="card-panel">
                     <div class="panel-header">
                         <h2><i class="fas fa-trophy"></i> Awards, Scholarships and Prizes</h2>
+                        <button class="btn btn-secondary btn-sm" onclick="addAwardItem()"><i class="fas fa-plus"></i> Add Award</button>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Awards list (HTML formatted or plain text, one per line)</label>
-                        <textarea id="home-awards" class="form-control" rows="5"></textarea>
-                    </div>
+                    <div id="home-awards-list"></div>
                 </div>
 
                 <div class="card-panel">
                     <div class="panel-header">
                         <h2><i class="fas fa-building-columns"></i> Professional Affiliations</h2>
+                        <button class="btn btn-secondary btn-sm" onclick="addAffiliationItem()"><i class="fas fa-plus"></i> Add Affiliation</button>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Affiliations list (One per line)</label>
-                        <textarea id="home-affiliations" class="form-control" rows="5"></textarea>
-                    </div>
+                    <div id="home-affiliations-list"></div>
                 </div>
             </div>
 

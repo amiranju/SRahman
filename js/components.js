@@ -69,7 +69,7 @@ function initSidebar() {
             <p class="text-sm text-gray-600 mb-6 leading-relaxed">Professor of Forestry and Wood Technology<br>Khulna University, Bangladesh</p>
             
             <ul class="space-y-3 text-left border-t border-emerald-50 pt-5">
-                <li><a href="mailto:msrahman@fwt.ku.ac.bd" class="flex items-center text-sm text-gray-700 hover:text-brand-green transition-colors"><i class="fas fa-envelope w-6 text-brand-green"></i> <span class="truncate">msrahman@fwt.ku.ac.bd</span></a></li>
+                <li><a href="mailto:msrahman@fwt.ku.ac.bd" target="_blank" class="flex items-center text-sm text-gray-700 hover:text-brand-green transition-colors"><i class="fas fa-envelope w-6 text-brand-green"></i> msrahman@fwt.ku.ac.bd</a></li>
                 <li><a href="https://ku.ac.bd/discipline/fwt/faculty/ranju_fwt" target="_blank" class="flex items-center text-sm text-gray-700 hover:text-brand-green transition-colors"><i class="fas fa-university w-6 text-brand-green"></i> Khulna University Profile</a></li>
                 <li><a href="https://www.durham.ac.uk/staff/md-s-rahman/#overview" target="_blank" class="flex items-center text-sm text-gray-700 hover:text-brand-green transition-colors"><i class="fas fa-graduation-cap w-6 text-brand-green"></i> Durham University Profile</a></li>
                 <li><a href="http://bd.linkedin.com/in/mdsrahman" target="_blank" class="flex items-center text-sm text-gray-700 hover:text-brand-green transition-colors"><i class="fab fa-linkedin w-6 text-brand-green"></i> LinkedIn</a></li>
