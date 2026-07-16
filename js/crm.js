@@ -1,7 +1,7 @@
 /**
  * Portfolio Content Management System (CMS) Logic
  * Auto-detects local workspace files, supports photo & hero banner uploads into photo/ folder, direct disk saving,
- * and user-friendly structured form cards for Education, Conferences, Awards, Affiliations, Publications, and Projects.
+ * and user-friendly structured form cards with Up/Down ordering controls across all sections.
  */
 
 // Application State
@@ -556,7 +556,11 @@ function renderSidebarForm() {
         div.innerHTML = `
             <div class="item-card-header">
                 <span class="item-card-title">Link #${idx + 1}: ${social.label}</span>
-                <button class="btn btn-sm btn-danger btn-icon-only" onclick="removeSocial(${idx})"><i class="fas fa-trash"></i></button>
+                <div class="item-actions">
+                    <button class="btn btn-sm btn-secondary btn-icon-only" onclick="moveSocial(${idx}, -1)" title="Move Up"><i class="fas fa-arrow-up"></i></button>
+                    <button class="btn btn-sm btn-secondary btn-icon-only" onclick="moveSocial(${idx}, 1)" title="Move Down"><i class="fas fa-arrow-down"></i></button>
+                    <button class="btn btn-sm btn-danger btn-icon-only" onclick="removeSocial(${idx})" title="Delete"><i class="fas fa-trash"></i></button>
+                </div>
             </div>
             <div class="form-group">
                 <label class="form-label">Label</label>
@@ -584,6 +588,16 @@ function removeSocial(index) {
     renderSidebarForm();
 }
 
+function moveSocial(idx, dir) {
+    const arr = CMSState.data.components.socials;
+    const targetIdx = idx + dir;
+    if (targetIdx < 0 || targetIdx >= arr.length) return;
+    const temp = arr[idx];
+    arr[idx] = arr[targetIdx];
+    arr[targetIdx] = temp;
+    renderSidebarForm();
+}
+
 function addSocialLink() {
     CMSState.data.components.socials.push({
         label: 'New Link',
@@ -600,20 +614,46 @@ function renderHomeForm() {
     aboutList.innerHTML = '';
     CMSState.data.index.about.forEach((para, idx) => {
         const div = document.createElement('div');
-        div.className = 'form-group';
+        div.className = 'item-card';
         div.innerHTML = `
-            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-                <label class="form-label">Paragraph #${idx + 1}</label>
-                <button class="btn btn-sm btn-danger btn-icon-only" onclick="removeAboutPara(${idx})"><i class="fas fa-trash"></i></button>
+            <div class="item-card-header">
+                <span class="item-card-title">Paragraph #${idx + 1}</span>
+                <div class="item-actions">
+                    <button class="btn btn-sm btn-secondary btn-icon-only" onclick="moveAboutPara(${idx}, -1)" title="Move Up"><i class="fas fa-arrow-up"></i></button>
+                    <button class="btn btn-sm btn-secondary btn-icon-only" onclick="moveAboutPara(${idx}, 1)" title="Move Down"><i class="fas fa-arrow-down"></i></button>
+                    <button class="btn btn-sm btn-danger btn-icon-only" onclick="removeAboutPara(${idx})" title="Delete"><i class="fas fa-trash"></i></button>
+                </div>
             </div>
-            <textarea class="form-control" rows="3" onchange="updateAboutPara(${idx}, this.value)">${para}</textarea>
+            <div class="form-group" style="margin-bottom:0;">
+                <textarea class="form-control" rows="3" onchange="updateAboutPara(${idx}, this.value)">${para}</textarea>
+            </div>
         `;
         aboutList.appendChild(div);
     });
 
-    // 2. Key Areas of Expertise
-    const keyContainer = document.getElementById('home-key-areas');
-    keyContainer.value = CMSState.data.index.keyAreas.join('\n');
+    // 2. Key Areas of Expertise (Interactive Cards)
+    const keyList = document.getElementById('home-key-areas-list');
+    if (keyList) {
+        keyList.innerHTML = '';
+        CMSState.data.index.keyAreas.forEach((area, idx) => {
+            const div = document.createElement('div');
+            div.className = 'item-card';
+            div.innerHTML = `
+                <div class="item-card-header">
+                    <span class="item-card-title">Key Area #${idx + 1}</span>
+                    <div class="item-actions">
+                        <button class="btn btn-sm btn-secondary btn-icon-only" onclick="moveKeyArea(${idx}, -1)" title="Move Up"><i class="fas fa-arrow-up"></i></button>
+                        <button class="btn btn-sm btn-secondary btn-icon-only" onclick="moveKeyArea(${idx}, 1)" title="Move Down"><i class="fas fa-arrow-down"></i></button>
+                        <button class="btn btn-sm btn-danger btn-icon-only" onclick="removeKeyArea(${idx})" title="Delete"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <input type="text" class="form-control" value="${area}" onchange="CMSState.data.index.keyAreas[${idx}] = this.value">
+                </div>
+            `;
+            keyList.appendChild(div);
+        });
+    }
 
     // 3. Education Timeline
     const eduList = document.getElementById('home-education-list');
@@ -624,7 +664,11 @@ function renderHomeForm() {
         div.innerHTML = `
             <div class="item-card-header">
                 <span class="item-card-title">${edu.title || 'Degree'}</span>
-                <button class="btn btn-sm btn-danger btn-icon-only" onclick="removeEducation(${idx})"><i class="fas fa-trash"></i></button>
+                <div class="item-actions">
+                    <button class="btn btn-sm btn-secondary btn-icon-only" onclick="moveEducation(${idx}, -1)" title="Move Up"><i class="fas fa-arrow-up"></i></button>
+                    <button class="btn btn-sm btn-secondary btn-icon-only" onclick="moveEducation(${idx}, 1)" title="Move Down"><i class="fas fa-arrow-down"></i></button>
+                    <button class="btn btn-sm btn-danger btn-icon-only" onclick="removeEducation(${idx})" title="Delete"><i class="fas fa-trash"></i></button>
+                </div>
             </div>
             <div class="form-group">
                 <label class="form-label">Degree & Year</label>
@@ -651,7 +695,11 @@ function renderHomeForm() {
         div.innerHTML = `
             <div class="item-card-header">
                 <span class="item-card-title">${conf.title || 'Conference'}</span>
-                <button class="btn btn-sm btn-danger btn-icon-only" onclick="removeConference(${idx})"><i class="fas fa-trash"></i></button>
+                <div class="item-actions">
+                    <button class="btn btn-sm btn-secondary btn-icon-only" onclick="moveConference(${idx}, -1)" title="Move Up"><i class="fas fa-arrow-up"></i></button>
+                    <button class="btn btn-sm btn-secondary btn-icon-only" onclick="moveConference(${idx}, 1)" title="Move Down"><i class="fas fa-arrow-down"></i></button>
+                    <button class="btn btn-sm btn-danger btn-icon-only" onclick="removeConference(${idx})" title="Delete"><i class="fas fa-trash"></i></button>
+                </div>
             </div>
             <div class="form-group">
                 <label class="form-label">Conference Title</label>
@@ -678,9 +726,9 @@ function renderHomeForm() {
             <div class="item-card-header">
                 <span class="item-card-title">${titleVal || 'Award #' + (idx + 1)}</span>
                 <div class="item-actions">
-                    <button class="btn btn-sm btn-secondary btn-icon-only" onclick="moveAward(${idx}, -1)"><i class="fas fa-arrow-up"></i></button>
-                    <button class="btn btn-sm btn-secondary btn-icon-only" onclick="moveAward(${idx}, 1)"><i class="fas fa-arrow-down"></i></button>
-                    <button class="btn btn-sm btn-danger btn-icon-only" onclick="removeAward(${idx})"><i class="fas fa-trash"></i></button>
+                    <button class="btn btn-sm btn-secondary btn-icon-only" onclick="moveAward(${idx}, -1)" title="Move Up"><i class="fas fa-arrow-up"></i></button>
+                    <button class="btn btn-sm btn-secondary btn-icon-only" onclick="moveAward(${idx}, 1)" title="Move Down"><i class="fas fa-arrow-down"></i></button>
+                    <button class="btn btn-sm btn-danger btn-icon-only" onclick="removeAward(${idx})" title="Delete"><i class="fas fa-trash"></i></button>
                 </div>
             </div>
             <div class="form-group">
@@ -705,9 +753,9 @@ function renderHomeForm() {
             <div class="item-card-header">
                 <span class="item-card-title">Affiliation #${idx + 1}</span>
                 <div class="item-actions">
-                    <button class="btn btn-sm btn-secondary btn-icon-only" onclick="moveAffiliation(${idx}, -1)"><i class="fas fa-arrow-up"></i></button>
-                    <button class="btn btn-sm btn-secondary btn-icon-only" onclick="moveAffiliation(${idx}, 1)"><i class="fas fa-arrow-down"></i></button>
-                    <button class="btn btn-sm btn-danger btn-icon-only" onclick="removeAffiliation(${idx})"><i class="fas fa-trash"></i></button>
+                    <button class="btn btn-sm btn-secondary btn-icon-only" onclick="moveAffiliation(${idx}, -1)" title="Move Up"><i class="fas fa-arrow-up"></i></button>
+                    <button class="btn btn-sm btn-secondary btn-icon-only" onclick="moveAffiliation(${idx}, 1)" title="Move Down"><i class="fas fa-arrow-down"></i></button>
+                    <button class="btn btn-sm btn-danger btn-icon-only" onclick="removeAffiliation(${idx})" title="Delete"><i class="fas fa-trash"></i></button>
                 </div>
             </div>
             <div class="form-group">
@@ -721,18 +769,57 @@ function renderHomeForm() {
 
 function updateAboutPara(idx, val) { CMSState.data.index.about[idx] = val; }
 function removeAboutPara(idx) { CMSState.data.index.about.splice(idx, 1); renderHomeForm(); }
+function moveAboutPara(idx, dir) {
+    const arr = CMSState.data.index.about;
+    const targetIdx = idx + dir;
+    if (targetIdx < 0 || targetIdx >= arr.length) return;
+    const temp = arr[idx];
+    arr[idx] = arr[targetIdx];
+    arr[targetIdx] = temp;
+    renderHomeForm();
+}
 function addAboutPara() { CMSState.data.index.about.push('New paragraph text...'); renderHomeForm(); }
+
+function removeKeyArea(idx) { CMSState.data.index.keyAreas.splice(idx, 1); renderHomeForm(); }
+function moveKeyArea(idx, dir) {
+    const arr = CMSState.data.index.keyAreas;
+    const targetIdx = idx + dir;
+    if (targetIdx < 0 || targetIdx >= arr.length) return;
+    const temp = arr[idx];
+    arr[idx] = arr[targetIdx];
+    arr[targetIdx] = temp;
+    renderHomeForm();
+}
+function addKeyAreaItem() { CMSState.data.index.keyAreas.push('New Area of Expertise'); renderHomeForm(); }
 
 function updateEduParas(idx, text) {
     CMSState.data.index.education[idx].paragraphs = text.split('\n').filter(l => l.trim() !== '');
 }
 function removeEducation(idx) { CMSState.data.index.education.splice(idx, 1); renderHomeForm(); }
+function moveEducation(idx, dir) {
+    const arr = CMSState.data.index.education;
+    const targetIdx = idx + dir;
+    if (targetIdx < 0 || targetIdx >= arr.length) return;
+    const temp = arr[idx];
+    arr[idx] = arr[targetIdx];
+    arr[targetIdx] = temp;
+    renderHomeForm();
+}
 function addEducationItem() {
     CMSState.data.index.education.push({ title: 'New Degree (Year)', meta: 'University, Country', paragraphs: [] });
     renderHomeForm();
 }
 
 function removeConference(idx) { CMSState.data.index.conferences.splice(idx, 1); renderHomeForm(); }
+function moveConference(idx, dir) {
+    const arr = CMSState.data.index.conferences;
+    const targetIdx = idx + dir;
+    if (targetIdx < 0 || targetIdx >= arr.length) return;
+    const temp = arr[idx];
+    arr[idx] = arr[targetIdx];
+    arr[targetIdx] = temp;
+    renderHomeForm();
+}
 function addConferenceItem() {
     CMSState.data.index.conferences.push({ title: 'Conference Name', description: 'Presentation details...' });
     renderHomeForm();
@@ -794,9 +881,9 @@ function renderPublicationsForm() {
             <div class="item-card-header">
                 <span class="item-card-title">Article #${idx + 1}</span>
                 <div class="item-actions">
-                    <button class="btn btn-sm btn-secondary btn-icon-only" onclick="movePublication(${idx}, -1)"><i class="fas fa-arrow-up"></i></button>
-                    <button class="btn btn-sm btn-secondary btn-icon-only" onclick="movePublication(${idx}, 1)"><i class="fas fa-arrow-down"></i></button>
-                    <button class="btn btn-sm btn-danger btn-icon-only" onclick="removePublication(${idx})"><i class="fas fa-trash"></i></button>
+                    <button class="btn btn-sm btn-secondary btn-icon-only" onclick="movePublication(${idx}, -1)" title="Move Up"><i class="fas fa-arrow-up"></i></button>
+                    <button class="btn btn-sm btn-secondary btn-icon-only" onclick="movePublication(${idx}, 1)" title="Move Down"><i class="fas fa-arrow-down"></i></button>
+                    <button class="btn btn-sm btn-danger btn-icon-only" onclick="removePublication(${idx})" title="Delete"><i class="fas fa-trash"></i></button>
                 </div>
             </div>
             <div class="form-group">
@@ -855,7 +942,11 @@ function createProjectCard(proj, idx, cat) {
     div.innerHTML = `
         <div class="item-card-header">
             <span class="item-card-title">${proj.title || 'Project Title'}</span>
-            <button class="btn btn-sm btn-danger btn-icon-only" onclick="removeProject('${cat}', ${idx})"><i class="fas fa-trash"></i></button>
+            <div class="item-actions">
+                <button class="btn btn-sm btn-secondary btn-icon-only" onclick="moveProject('${cat}', ${idx}, -1)" title="Move Up"><i class="fas fa-arrow-up"></i></button>
+                <button class="btn btn-sm btn-secondary btn-icon-only" onclick="moveProject('${cat}', ${idx}, 1)" title="Move Down"><i class="fas fa-arrow-down"></i></button>
+                <button class="btn btn-sm btn-danger btn-icon-only" onclick="removeProject('${cat}', ${idx})" title="Delete"><i class="fas fa-trash"></i></button>
+            </div>
         </div>
         <div class="form-group">
             <label class="form-label">Project Name</label>
@@ -877,6 +968,15 @@ function createProjectCard(proj, idx, cat) {
     return div;
 }
 
+function moveProject(cat, idx, dir) {
+    const arr = CMSState.data.projects[cat];
+    const targetIdx = idx + dir;
+    if (targetIdx < 0 || targetIdx >= arr.length) return;
+    const temp = arr[idx];
+    arr[idx] = arr[targetIdx];
+    arr[targetIdx] = temp;
+    renderProjectsForm();
+}
 function removeProject(cat, idx) {
     CMSState.data.projects[cat].splice(idx, 1);
     renderProjectsForm();
@@ -904,7 +1004,11 @@ function renderTeachingForm() {
         div.innerHTML = `
             <div class="item-card-header">
                 <span class="item-card-title">${exp.title}</span>
-                <button class="btn btn-sm btn-danger btn-icon-only" onclick="removeTeachingExp(${idx})"><i class="fas fa-trash"></i></button>
+                <div class="item-actions">
+                    <button class="btn btn-sm btn-secondary btn-icon-only" onclick="moveTeachingExp(${idx}, -1)" title="Move Up"><i class="fas fa-arrow-up"></i></button>
+                    <button class="btn btn-sm btn-secondary btn-icon-only" onclick="moveTeachingExp(${idx}, 1)" title="Move Down"><i class="fas fa-arrow-down"></i></button>
+                    <button class="btn btn-sm btn-danger btn-icon-only" onclick="removeTeachingExp(${idx})" title="Delete"><i class="fas fa-trash"></i></button>
+                </div>
             </div>
             <div class="form-group">
                 <label class="form-label">Position Title & Dates</label>
@@ -934,7 +1038,11 @@ function renderTeachingForm() {
         div.innerHTML = `
             <div class="item-card-header">
                 <span class="item-card-title">${tr.title}</span>
-                <button class="btn btn-sm btn-danger btn-icon-only" onclick="removeTeachingTraining(${idx})"><i class="fas fa-trash"></i></button>
+                <div class="item-actions">
+                    <button class="btn btn-sm btn-secondary btn-icon-only" onclick="moveTeachingTraining(${idx}, -1)" title="Move Up"><i class="fas fa-arrow-up"></i></button>
+                    <button class="btn btn-sm btn-secondary btn-icon-only" onclick="moveTeachingTraining(${idx}, 1)" title="Move Down"><i class="fas fa-arrow-down"></i></button>
+                    <button class="btn btn-sm btn-danger btn-icon-only" onclick="removeTeachingTraining(${idx})" title="Delete"><i class="fas fa-trash"></i></button>
+                </div>
             </div>
             <div class="form-group">
                 <label class="form-label">Training Topic</label>
@@ -956,12 +1064,30 @@ function renderTeachingForm() {
 function updateTeachingBullets(idx, val) {
     CMSState.data.teaching.experiences[idx].bullets = val.split('\n').filter(b => b.trim() !== '');
 }
+function moveTeachingExp(idx, dir) {
+    const arr = CMSState.data.teaching.experiences;
+    const targetIdx = idx + dir;
+    if (targetIdx < 0 || targetIdx >= arr.length) return;
+    const temp = arr[idx];
+    arr[idx] = arr[targetIdx];
+    arr[targetIdx] = temp;
+    renderTeachingForm();
+}
 function removeTeachingExp(idx) { CMSState.data.teaching.experiences.splice(idx, 1); renderTeachingForm(); }
 function addTeachingExp() {
     CMSState.data.teaching.experiences.push({ title: 'Position Title', meta: 'Institution Name', bullets: [], description: '' });
     renderTeachingForm();
 }
 
+function moveTeachingTraining(idx, dir) {
+    const arr = CMSState.data.teaching.trainings;
+    const targetIdx = idx + dir;
+    if (targetIdx < 0 || targetIdx >= arr.length) return;
+    const temp = arr[idx];
+    arr[idx] = arr[targetIdx];
+    arr[targetIdx] = temp;
+    renderTeachingForm();
+}
 function removeTeachingTraining(idx) { CMSState.data.teaching.trainings.splice(idx, 1); renderTeachingForm(); }
 function addTeachingTraining() {
     CMSState.data.teaching.trainings.push({ title: 'Training Topic', meta: 'Year | Funder', description: 'Summary of training...' });
@@ -1075,9 +1201,6 @@ function syncFormValuesToState() {
     CMSState.data.components.role = document.getElementById('sidebar-role').value;
     CMSState.data.components.avatar = document.getElementById('sidebar-avatar').value;
     CMSState.data.components.heroBanner = document.getElementById('site-hero-banner').value || 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80';
-
-    const keyText = document.getElementById('home-key-areas').value;
-    CMSState.data.index.keyAreas = keyText.split('\n').filter(k => k.trim() !== '');
 
     CMSState.data.publications.note = document.getElementById('publications-note').value;
 
