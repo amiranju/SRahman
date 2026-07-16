@@ -2,6 +2,20 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="robots" content="noindex, nofollow, noarchive">
+    <script>
+        // Security & Access Control Guard: Restrict CMS Dashboard to local machine environments only.
+        (function() {
+            const isLocal = window.location.protocol === 'file:' || 
+                            window.location.hostname === 'localhost' || 
+                            window.location.hostname === '127.0.0.1' || 
+                            window.location.hostname === '';
+            if (!isLocal) {
+                // Online GitHub Pages / public web environment detected - redirect instantly to public index.html page
+                window.location.replace('index.html');
+            }
+        })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Local Content Management System Dashboard for Portfolio Management">
     <title>Portfolio CMS | Local Content Dashboard</title>
